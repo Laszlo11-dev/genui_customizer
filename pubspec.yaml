@@ -4,6 +4,10 @@ version: 0.1.0
 homepage: https://laszlo11-dev.github.io/genui_customizer/
 repository: https://github.com/Laszlo11-dev/genui_customizer
 issue_tracker: https://github.com/Laszlo11-dev/genui_customizer/issues
+documentation: https://github.com/Laszlo11-dev/genui_customizer/blob/main/example/INSTALL_GUIDE.md
+
+funding:
+  - https://github.com/sponsors/Laszlo11-dev
 
 topics:
   - flutter
