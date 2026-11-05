@@ -6,7 +6,7 @@ GenUI generates interfaces dynamically. GenUI Customizer lets developers and use
 
 Open the Studio over the live UI. **Triple-click** a widget on desktop or **long-press** it on touch devices to select it, then edit the properties the host application has made available. Changes appear immediately; undo, redo, discard, and save are supported. Manual editing does not require an AI service.
 
-![Studio editing a live GenUI surface with the component tree, selected text, and preview](https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png)
+<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="Studio editing a live GenUI surface with the component tree, selected text, and preview" width="400">
 
 Select a widget in the running app or component tree, then adjust its properties alongside a preview.
 
@@ -28,7 +28,7 @@ Unlike a theme setting, the Studio can edit **individual rendered widgets** as w
 
 The Studio is a movable, resizable panel inside the running app. Changes are previewed as you make them. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
 
-![Text style selection in a compact Studio window over the live application](https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png)
+<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png" alt="Text style selection in a compact Studio window over the live application" width="400">
 
 The compact Studio keeps the property editor and preview visible. Select another widget in the app without closing the Studio; edits to a shared template appear on every instance.
 
