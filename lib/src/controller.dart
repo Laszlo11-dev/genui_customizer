@@ -121,8 +121,9 @@ final class EditableGenUiController extends ChangeNotifier {
   Future<void> prompt(String instruction) async {
     final selected = selection;
     final ai = composer;
-    if (_busy || !permissions.canUseAi || selected == null || ai == null)
+    if (_busy || !permissions.canUseAi || selected == null || ai == null) {
       return;
+    }
     final normalized = instruction.trim();
     if (normalized.isEmpty) return;
     final contract = registry.contractFor(selected.componentType)!;

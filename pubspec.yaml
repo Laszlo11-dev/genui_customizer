@@ -28,6 +28,13 @@ environment:
   sdk: ^3.13.0
   flutter: '>=3.35.7'
 
+platforms:
+  android:
+  ios:
+  macos:
+  web:
+  windows:
+
 dependencies:
   a2ui_core: ^0.1.1
   flutter:
