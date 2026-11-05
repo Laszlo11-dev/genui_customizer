@@ -372,7 +372,9 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    final saveButton = tester.widget<IconButton>(find.byTooltip('Save'));
+    final saveButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.save_outlined),
+    );
     final colors = Theme.of(tester.element(find.byType(AppBar))).colorScheme;
     expect(
       saveButton.style?.foregroundColor?.resolve({WidgetState.disabled}),
@@ -384,6 +386,15 @@ void main() {
         tester.getRect(find.byKey(const Key('genui-studio-menu'))).left,
       ),
     );
+    await tester.tap(find.byKey(const Key('genui-studio-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AboutDialog), findsOneWidget);
+    expect(find.text('View licenses'), findsOneWidget);
+    await tester.tap(find.text('View licenses'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LicensePage), findsOneWidget);
   });
 
   testWidgets('back asks about unsaved edits and can save or discard them', (

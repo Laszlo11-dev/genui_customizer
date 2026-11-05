@@ -628,6 +628,11 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                           controller.redo();
                         case 'discard':
                           controller.cancel();
+                        case 'about':
+                          showAboutDialog(
+                            context: context,
+                            applicationName: 'GenUI Studio',
+                          );
                         case 'debug':
                           final load = widget.loadDebugData;
                           if (load != null) {
@@ -656,6 +661,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                           value: 'debug',
                           child: Text('GenUI debug'),
                         ),
+                      const PopupMenuItem(value: 'about', child: Text('About')),
                       if (compact) const PopupMenuDivider(),
                       if (compact) ...[
                         PopupMenuItem(
