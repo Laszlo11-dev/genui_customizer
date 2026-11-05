@@ -34,12 +34,12 @@ For an Android device, replace `chrome` with its device ID from `flutter devices
 4. Use **Reset saved appearance** and search again to restore the agent's
    default presentation.
 
-The Studio overflow menu includes **GenUI debug**. In recorded mode it shows
+GenUI Touch overflow menu includes **GenUI debug**. In recorded mode it shows
 the last search request and replayed A2UI response; in live mode it shows the
 latest received A2UI messages. The current UI and saved appearance are also
 available there.
 
-The Studio also remembers its window position and size after a move or resize,
+GenUI Touch also remembers its window position and size after a move or resize,
 including when the app is started again. If the available screen is smaller,
 the window fits itself back inside the visible area.
 

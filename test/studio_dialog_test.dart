@@ -386,7 +386,7 @@ void main() {
       colors.onInverseSurface.withValues(alpha: 0.38),
     );
     expect(
-      tester.getRect(find.text('GenUI Studio')).right,
+      tester.getRect(find.text('GenUI Touch')).right,
       lessThanOrEqualTo(
         tester.getRect(find.byKey(const Key('genui-studio-menu'))).left,
       ),
@@ -396,6 +396,7 @@ void main() {
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
     expect(find.byType(AboutDialog), findsOneWidget);
+    expect(find.text('Make generated UI your own.'), findsOneWidget);
     expect(find.text('View licenses'), findsOneWidget);
     await tester.tap(find.text('View licenses'));
     await tester.pumpAndSettle();

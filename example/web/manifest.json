@@ -1,11 +1,11 @@
 {
-  "name": "Restaurant Finder · GenUI Customizer demo",
+  "name": "Restaurant Finder · GenUI Touch demo",
   "short_name": "Restaurant Finder",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0175C2",
   "theme_color": "#0175C2",
-  "description": "Try the GenUI Customizer in the Restaurant Finder demo.",
+  "description": "Try GenUI Touch in the Restaurant Finder demo.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [

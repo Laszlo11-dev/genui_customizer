@@ -31,7 +31,7 @@ save. Search again to see that style on different restaurant data. Restart
 the app to check persistence. **Reset saved appearance** removes the saved
 role rules and gallery defaults; search again to see the agent's original
 styles. A desktop triple click or touch long press also opens the selected
-widget in the Studio.
+widget in GenUI Touch.
 
 ## 1. Add the dependency
 
@@ -59,7 +59,7 @@ owned by the host. Each `EditableComponentContract` names a GenUI component.
 The example allows only `Image.variant` and `Text.variant`, with enum values
 matching the Basic Catalog. `Image.url`, children, and `Text.text` are
 protected. Other Basic Catalog components have empty property lists so they
-can appear in the Studio tree without offering edits.
+can appear in GenUI Touch tree without offering edits.
 
 Replace these contracts with the actual components and visual properties in
 your catalog. Keep content, data bindings, actions, IDs, and child links out
@@ -103,8 +103,8 @@ ID because its GenUI dependency otherwise supplies a different default ID
 from the upstream agent. A host whose IDs already match needs no override.
 Dispose the controller with its owning session.
 
-The callback storage exposes the current baseline to Studio reload and turns
-a Studio save into a reusable appearance profile. It does not persist raw
+The callback storage exposes the current baseline to GenUI Touch reload and turns
+a GenUI Touch save into a reusable appearance profile. It does not persist raw
 agent messages as a long-term preference. Another application may provide a
 different `EditableGenUiStorage` adapter.
 
@@ -270,12 +270,12 @@ host must replace `SharedPreferencesAsync` with identity-aware storage and
 enforce authorization there. Keep the catalog ID/version check and migrate or
 discard old profiles when the catalog changes.
 
-## 6. Add a visible Studio action — required
+## 6. Add a visible GenUI Touch action — required
 
 **Edit the screen that renders your GenUI surfaces.** The example's file is
 `lib/src/screen.dart`. Import `package:genui/genui.dart` and
 `package:genui_customizer/genui_customizer.dart`. In its `State`, use this
-session setup and Studio method. Use the same session and controller that
+session setup and GenUI Touch method. Use the same session and controller that
 render the surface.
 
 ```dart
@@ -344,13 +344,13 @@ The following additions are **optional**:
   component of a type. The example validates and stores these values under
   `restaurant_finder_gallery_defaults_v1`. Apply them before role-specific
   rules in step 4; a role rule then takes precedence.
-- **Window placement:** Supply `loadBounds` and `saveBounds` if the Studio
+- **Window placement:** Supply `loadBounds` and `saveBounds` if GenUI Touch
   should remember its movable, resizable window. The example's
   `lib/src/studio_bounds_store.dart` validates stored bounds and queues writes.
-  Flush pending writes when the Studio closes.
+  Flush pending writes when GenUI Touch closes.
 - **AI editing:** Supply an `EditableGenUiComposer` to
   `GenUiCustomizer.attach` if you provide a trusted backend for privileged
-  credentials and authorization. The Studio's `onGenerateProposal` is a
+  credentials and authorization. GenUI Touch's `onGenerateProposal` is a
   separate host-provided agent operation. Neither is needed for manual edits.
 
 ## File-by-file source inventory
@@ -361,22 +361,22 @@ The following additions are **optional**:
 | `lib/main.dart` | Keeps the Flutter entrypoint as a small handoff to `src/main.dart` for a conventional run configuration. |
 | `lib/src/main.dart` | Keeps the Restaurant Finder app, Material theme, and theme toggle. Customizer initialization is scoped to the session, not the application root. |
 | `lib/src/session.dart` | Holds the contracts, decorated catalog, controller, A2UI interception, role mapping, profile and gallery persistence, transport choice, reset, and disposal. This is the main integration file. |
-| `lib/src/screen.dart` | Renders generated surfaces and adds Studio/reset actions; supplies the Studio's gallery and bounds adapters. |
-| `lib/src/studio_bounds_store.dart` | Adds optional local persistence for Studio window placement. |
+| `lib/src/screen.dart` | Renders generated surfaces and adds GenUI Touch/reset actions; supplies GenUI Touch's gallery and bounds adapters. |
+| `lib/src/studio_bounds_store.dart` | Adds optional local persistence for GenUI Touch window placement. |
 | `lib/src/primitives.dart` | Keeps ordinary Restaurant Finder UI helpers: theme button, error banner, and loading text. No customizer API is needed here. |
 | `assets/first_search.json`, `assets/next_search.json` | Record two agent responses so saved appearance can be exercised against different data and component IDs without a live agent. |
 | `assets/images/` | Holds restaurant images referenced by recorded results. |
 | `web/`, `windows/` | Provide Flutter platform runners. There is no platform-specific customizer hook. |
 | `test/restaurant_customization_test.dart` | Verifies role-based style transfer to the second response while its restaurant data remains new. |
-| `test/restaurant_persistence_test.dart` | Exercises a Studio edit, save, new search, and widget restart. |
+| `test/restaurant_persistence_test.dart` | Exercises a GenUI Touch edit, save, new search, and widget restart. |
 | `test/restaurant_gallery_persistence_test.dart` | Checks gallery defaults after restart and on newly generated text. |
-| `test/restaurant_screen_test.dart` | Checks recorded search, Studio opening, bounds persistence, and the next response. |
+| `test/restaurant_screen_test.dart` | Checks recorded search, GenUI Touch opening, bounds persistence, and the next response. |
 
 `UPSTREAM_LICENSE` records the copied sample's license. Other example files
 are package metadata or generated platform assets, not customizer integration
 points. For a host, the required source edits are the dependency, registry,
 controller/catalog decoration, message interception, role/profile storage,
-and Studio entry action. Recorded responses, device storage, Gallery view,
+and GenUI Touch entry action. Recorded responses, device storage, Gallery view,
 and window bounds are example choices.
 
 ## Verify the integration

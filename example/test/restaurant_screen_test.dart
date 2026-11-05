@@ -22,7 +22,7 @@ void main() {
 
       await tester.tap(find.text('Customize results'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('GenUI Studio'), findsWidgets);
+      expect(find.textContaining('GenUI Touch'), findsWidgets);
       await tester.tap(find.byKey(const Key('genui-studio-menu')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('GenUI debug'));

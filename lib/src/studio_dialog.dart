@@ -444,7 +444,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
           context: context,
           builder: (dialogContext) => AlertDialog(
             title: const Text('Save changes?'),
-            content: const Text('You have unsaved changes in the Studio.'),
+            content: const Text('You have unsaved changes in GenUI Touch.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
@@ -578,7 +578,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                         alignment: Alignment.centerLeft,
                         child: compact
                             ? const Text(
-                                'GenUI Studio',
+                                'GenUI Touch',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               )
@@ -591,7 +591,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                                     color: colors.inversePrimary,
                                   ),
                                   const SizedBox(width: 12),
-                                  const Text('GenUI Studio'),
+                                  const Text('GenUI Touch'),
                                 ],
                               ),
                       ),
@@ -632,7 +632,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                   ],
                   PopupMenuButton<String>(
                     key: const Key('genui-studio-menu'),
-                    tooltip: 'Studio menu',
+                    tooltip: 'GenUI Touch menu',
                     onSelected: (action) {
                       switch (action) {
                         case 'structure':
@@ -648,7 +648,10 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                         case 'about':
                           showAboutDialog(
                             context: context,
-                            applicationName: 'GenUI Studio',
+                            applicationName: 'GenUI Touch',
+                            children: const [
+                              Text('Make generated UI your own.'),
+                            ],
                           );
                         case 'debug':
                           final load = widget.loadDebugData;

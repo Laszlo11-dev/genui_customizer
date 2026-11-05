@@ -1,12 +1,12 @@
-# GenUI Customizer
+# GenUI Touch
 
-**Runtime visual customization for Flutter GenUI applications.**
+**Make generated UI your own.**
 
-GenUI generates interfaces dynamically. GenUI Customizer lets developers and users adjust the appearance of those interfaces **in the running application**, without changing source code or editing A2UI JSON.
+GenUI generates interfaces dynamically. GenUI Touch lets developers and users adjust the appearance of those interfaces **in the running application**, without changing source code or editing A2UI JSON.
 
-Open the Studio over the live UI. **Triple-click** a widget on desktop or **long-press** it on touch devices to select it, then edit the properties the host application has made available. Changes appear immediately; undo, redo, discard, and save are supported. Manual editing does not require an AI service.
+Open GenUI Touch over the live UI. **Triple-click** a widget on desktop or **long-press** it on touch devices to select it, then edit the properties the host application has made available. Changes appear immediately; undo, redo, discard, and save are supported. Manual editing does not require an AI service.
 
-<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="Studio editing a live GenUI surface with the component tree, selected text, and preview" width="400">
+<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="GenUI Touch editing a live GenUI surface with the component tree, selected text, and preview" width="400">
 
 Select a widget in the running app or component tree, then adjust its properties alongside a preview.
 
@@ -17,7 +17,7 @@ Select a widget in the running app or component tree, then adjust its properties
 - **Multi-tenant app administrator:** adjust catalog widget defaults for a company or team, with the scope and permissions managed by the host app.
 - **End user:** personalize selected parts of their own interface, manually or with optional AI assistance.
 
-Unlike a theme setting, the Studio can edit **individual rendered widgets** as well as **defaults for catalog widget types**. It does not replace an application's theme or design system.
+Unlike a theme setting, GenUI Touch can edit **individual rendered widgets** as well as **defaults for catalog widget types**. It does not replace an application's theme or design system.
 
 ## Two editing modes
 
@@ -26,11 +26,11 @@ Unlike a theme setting, the Studio can edit **individual rendered widgets** as w
 | Customize a specific widget in the current generated UI. | Customize default property values for a widget type. |
 | Select it by triple-click, long-press, or from the component tree. | Select a catalog widget and edit its preview. |
 
-The Studio is a movable, resizable panel inside the running app. Changes are previewed as you make them. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
+GenUI Touch is a movable, resizable panel inside the running app. Changes are previewed as you make them. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
 
-<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png" alt="Text style selection in a compact Studio window over the live application" width="400">
+<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png" alt="Text style selection in a compact GenUI Touch window over the live application" width="400">
 
-The compact Studio keeps the property editor and preview visible. Select another widget in the app without closing the Studio; edits to a shared template appear on every instance.
+The compact GenUI Touch window keeps the property editor and preview visible. Select another widget in the app without closing GenUI Touch; edits to a shared template appear on every instance.
 
 <!-- SCREENSHOT: Gallery default editing. -->
 <!-- ![Gallery mode](doc/images/gallery-defaults.png) -->
@@ -61,4 +61,4 @@ For local development, the repository pins Flutter **3.47.9** in `.fvmrc` (`fvm 
 
 **Experimental.** APIs and behavior may change without backward compatibility. This project is developed with **heavy use of AI**, including AI-assisted coding; its implementation should be reviewed and tested accordingly.
 
-GenUI Customizer focuses on runtime visual customization. It is **not a design-time UI builder** or a replacement for Flutter development tools. Feedback and contributions are welcome.
+GenUI Touch focuses on runtime visual customization. It is **not a design-time UI builder** or a replacement for Flutter development tools. Feedback and contributions are welcome.

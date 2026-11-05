@@ -1,5 +1,5 @@
 name: genui_customizer
-description: Runtime customization and saved appearance preferences for Flutter GenUI surfaces.
+description: GenUI Touch lets users customize Flutter GenUI interfaces at runtime and save appearance preferences.
 version: 0.1.0
 homepage: https://laszlo11-dev.github.io/genui_customizer/
 repository: https://github.com/Laszlo11-dev/genui_customizer
@@ -19,7 +19,7 @@ topics:
 screenshots:
   - description: 'Edit a live GenUI surface with the component tree, property editor, and selected widget preview.'
     path: doc/images/studio-overview.png
-  - description: 'Choose text styles in the compact Studio while previewing changes in the running application.'
+  - description: 'Choose text styles in the compact GenUI Touch window while previewing changes in the running application.'
     path: doc/images/surface-editing.png
 
 environment:
