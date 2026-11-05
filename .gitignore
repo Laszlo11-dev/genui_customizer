@@ -1,5 +1,4 @@
 .dart_tool/
-.fvm/flutter_sdk/
 .pub-cache/
 build/
 coverage/
@@ -24,3 +23,6 @@ coverage/
 *.p12
 *.jks
 **/service-account*.json
+
+# FVM Version Cache
+.fvm/

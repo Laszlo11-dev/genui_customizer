@@ -1,5 +1,5 @@
 import 'package:genui_customizer/src/core/core.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('shared editor definition survives serialization', () {

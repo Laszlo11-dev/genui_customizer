@@ -487,6 +487,12 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
     builder: (context, constraints) {
       final compact = constraints.maxWidth < 820;
       final colors = Theme.of(context).colorScheme;
+      final toolbarIconStyle = IconButton.styleFrom(
+        foregroundColor: colors.onInverseSurface,
+        disabledForegroundColor: colors.onInverseSurface.withValues(
+          alpha: 0.38,
+        ),
+      );
       return AnimatedBuilder(
         animation: widget.controller,
         builder: (context, _) {
@@ -577,6 +583,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                 ),
                 leading: IconButton(
                   tooltip: 'Close editor',
+                  style: toolbarIconStyle,
                   onPressed: controller.busy ? null : _requestClose,
                   icon: const Icon(Icons.close),
                 ),
@@ -584,6 +591,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                   if (!compact) ...[
                     IconButton(
                       tooltip: 'Undo',
+                      style: toolbarIconStyle,
                       onPressed: controller.canUndo && !controller.busy
                           ? controller.undo
                           : null,
@@ -591,6 +599,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                     ),
                     IconButton(
                       tooltip: 'Redo',
+                      style: toolbarIconStyle,
                       onPressed: controller.canRedo && !controller.busy
                           ? controller.redo
                           : null,
@@ -670,6 +679,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                   if (compact)
                     IconButton(
                       tooltip: 'Save',
+                      style: toolbarIconStyle,
                       onPressed:
                           controller.permissions.canSave &&
                               controller.isDirty &&

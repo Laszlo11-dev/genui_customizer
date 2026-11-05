@@ -372,6 +372,12 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    final saveButton = tester.widget<IconButton>(find.byTooltip('Save'));
+    final colors = Theme.of(tester.element(find.byType(AppBar))).colorScheme;
+    expect(
+      saveButton.style?.foregroundColor?.resolve({WidgetState.disabled}),
+      colors.onInverseSurface.withValues(alpha: 0.38),
+    );
     expect(
       tester.getRect(find.text('GenUI Studio')).right,
       lessThanOrEqualTo(

@@ -102,6 +102,11 @@ Storage and access control remain the responsibility of the host application.
 
 The [Restaurant Finder example](example/README.md) adapts the official A2UI Flutter client.
 
+For local development, run `fvm use` from the repository root. The project pins
+Flutter 3.47.9 in `.fvmrc`. In Android Studio, set the project Flutter SDK path
+to this repository's `.fvm/flutter_sdk` directory so the IDE follows the same
+version as the command line.
+
 By default, it replays two recorded responses from the official agent, allowing the customization workflow to be explored without AI credentials.
 
 The example uses device-local storage. Production applications must provide their own identity, persistence, and authorization mechanisms.

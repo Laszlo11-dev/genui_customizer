@@ -1,5 +1,5 @@
 import 'package:genui_customizer/genui_customizer.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final registry = EditableCatalogRegistry(
