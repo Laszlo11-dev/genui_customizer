@@ -7,7 +7,6 @@ on:
       - .github/workflows/demo.yml
       - .fvmrc
       - pubspec.yaml
-      - pubspec.lock
       - lib/**
       - example/**
       - doc/images/**

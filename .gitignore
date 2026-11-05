@@ -2,8 +2,22 @@
 .pub-cache/
 build/
 coverage/
+/doc/api/
+# The library resolves compatible dependencies; the example app keeps its lockfile.
+/pubspec.lock
 .idea/
 .vscode/
+.agents/
+.codex/
+.aws/
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+*.bak
+.pub/
+.widget_preview/
+pubspec_overrides.yaml
 *.iml
 **/android/local.properties
 **/android/key.properties
@@ -21,8 +35,12 @@ coverage/
 *.log
 *.pem
 *.p12
+*.pfx
+*.key
+*.keystore
 *.jks
 **/service-account*.json
+**/credentials.json
 
 # FVM Version Cache
 .fvm/
