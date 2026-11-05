@@ -32,21 +32,17 @@ GenUI Touch is a movable, resizable panel inside the running app. Changes are pr
 
 The compact GenUI Touch window keeps the property editor and preview visible. Select another widget in the app without closing GenUI Touch; edits to a shared template appear on every instance.
 
-<!-- SCREENSHOT: Gallery default editing. -->
-<!-- ![Gallery mode](doc/images/gallery-defaults.png) -->
-
 ## Example
 
 Try the [live Restaurant Finder demo](https://laszlo11-dev.github.io/genui_customizer/) or follow the [example customization walkthrough](example/README.md). It uses recorded agent responses by default, so you can select, edit, save, and restore customizations without configuring an AI service.
+
+The repository also includes [Simple Chat with GenUI Touch](https://github.com/Laszlo11-dev/genui_customizer/tree/main/examples/simple_chat), adapted from Flutter's official GenUI example, with a recorded demo and optional live Gemini chat. Its migration log documents integration decisions and limitations.
 
 Optional AI integration can provide scoped property editing or propose new generated surfaces. Human edits and AI generation can be combined, subject to the host application's integration.
 
 <img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/complex-layout-ai-regeneration.png" alt="Complex layout editing with a component tree, live preview, AI regeneration preferences, and widget-level AI edits" width="400">
 
 Work with complex layouts, adjust individual widgets, or describe a new presentation and generate an AI proposal using the host application's AI integration.
-
-<!-- VIDEO: Insert a link to a real screen recording of runtime selection, manual editing, optional AI refinement, and persistence. -->
-<!-- [![Demo video](doc/images/demo-thumbnail.png)](YOUR_VIDEO_URL) -->
 
 ## Integration
 
