@@ -57,6 +57,10 @@ See the [installation and integration guide](example/INSTALL_GUIDE.md) for the c
 
 For local development, the repository pins Flutter **3.47.9** in `.fvmrc` (`fvm use`).
 
+## License
+
+GenUI Touch is licensed under the [PolyForm Perimeter License 1.0.1](LICENSE). The adapted Restaurant Finder example retains its upstream notices and license; see [UPSTREAM_LICENSE](example/UPSTREAM_LICENSE).
+
 ## Project status
 
 **Experimental.** APIs and behavior may change without backward compatibility. This project is developed with **heavy use of AI**, including AI-assisted coding; its implementation should be reviewed and tested accordingly.
