@@ -41,6 +41,10 @@ Try the [live Restaurant Finder demo](https://laszlo11-dev.github.io/genui_custo
 
 Optional AI integration can provide scoped property editing or propose new generated surfaces. Human edits and AI generation can be combined, subject to the host application's integration.
 
+<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/complex-layout-ai-regeneration.png" alt="Complex layout editing with a component tree, live preview, AI regeneration preferences, and widget-level AI edits" width="400">
+
+Work with complex layouts, adjust individual widgets, or describe a new presentation and generate an AI proposal using the host application's AI integration.
+
 <!-- VIDEO: Insert a link to a real screen recording of runtime selection, manual editing, optional AI refinement, and persistence. -->
 <!-- [![Demo video](doc/images/demo-thumbnail.png)](YOUR_VIDEO_URL) -->
 

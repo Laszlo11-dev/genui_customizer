@@ -21,6 +21,8 @@ screenshots:
     path: doc/images/studio-overview.png
   - description: 'Choose text styles in the compact GenUI Touch window while previewing changes in the running application.'
     path: doc/images/surface-editing.png
+  - description: 'Edit a complex layout with a live preview, AI regeneration preferences, and widget-level AI edits.'
+    path: doc/images/complex-layout-ai-regeneration.png
 
 environment:
   sdk: ^3.13.0
