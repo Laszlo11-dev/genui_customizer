@@ -6,6 +6,7 @@ final class GenUiComponentSelection {
     required this.componentId,
     required this.componentType,
     required this.definitionRevision,
+    this.dataPath,
   });
 
   final String surfaceId;
@@ -13,11 +14,15 @@ final class GenUiComponentSelection {
   final String componentType;
   final int definitionRevision;
 
+  /// Data context of the clicked instance, including template indices.
+  final String? dataPath;
+
   GenUiComponentSelection atRevision(int revision) => GenUiComponentSelection(
     surfaceId: surfaceId,
     componentId: componentId,
     componentType: componentType,
     definitionRevision: revision,
+    dataPath: dataPath,
   );
 }
 

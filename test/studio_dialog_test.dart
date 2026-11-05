@@ -1,3 +1,4 @@
+import 'package:genui/genui.dart';
 import 'package:genui_customizer/genui_customizer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -237,6 +238,10 @@ void main() {
   testWidgets(
     'opens the selected Text in a compact editor with a structure drawer',
     (tester) async {
+      tester.view.physicalSize = const Size(590, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final controller = EditableGenUiController(
         initial: GenUiEditSnapshot(
           revision: 1,
@@ -504,6 +509,151 @@ void main() {
     expect(find.byKey(const Key('editable-genui-studio-dialog')), findsNothing);
   });
 
+  testWidgets(
+    'keeps the tree at 600 and changes selection through the floating window',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = EditableGenUiController(
+        initial: const GenUiEditSnapshot(
+          revision: 1,
+          messages: [
+            {
+              'updateComponents': {
+                'surfaceId': 'review',
+                'components': [
+                  {
+                    'id': 'root',
+                    'component': 'Column',
+                    'children': ['list'],
+                  },
+                  {
+                    'id': 'list',
+                    'component': 'List',
+                    'children': {'componentId': 'title', 'path': '/items'},
+                  },
+                  {
+                    'id': 'title',
+                    'component': 'Text',
+                    'text': {'path': 'name'},
+                    'variant': 'h1',
+                  },
+                  {
+                    'id': 'other',
+                    'component': 'Text',
+                    'text': 'Another widget',
+                  },
+                ],
+              },
+            },
+          ],
+        ),
+        registry: EditableCatalogRegistry(
+          catalogId: 'test',
+          catalogVersion: 1,
+          components: [
+            EditableComponentContract(type: 'Text', properties: const []),
+          ],
+        ),
+      );
+      addTearDown(controller.dispose);
+      void select(String id, {String? path}) => controller.open(
+        GenUiComponentSelection(
+          surfaceId: 'review',
+          componentId: id,
+          componentType: 'Text',
+          definitionRevision: controller.snapshot.revision,
+          dataPath: path,
+        ),
+      );
+      controller.select(
+        const GenUiComponentSelection(
+          surfaceId: 'review',
+          componentId: 'title',
+          componentType: 'Text',
+          definitionRevision: 1,
+        ),
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: TextButton(
+                    onPressed: () => select('title', path: '/items/1'),
+                    child: const Text('Select second instance'),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  top: 60,
+                  child: TextButton(
+                    onPressed: () => select('other'),
+                    child: const Text('Select other'),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  bottom: 0,
+                  child: TextButton(
+                    onPressed: () => showEditableGenUiStudio(
+                      context: context,
+                      controller: controller,
+                      galleryTypes: const ['Text'],
+                      galleryCatalog: BasicCatalogItems.asCatalog(),
+                      galleryViewModel: const {
+                        'items': [
+                          {'name': 'First restaurant'},
+                          {'name': 'Second restaurant'},
+                        ],
+                      },
+                      loadBounds: () => const Rect.fromLTWH(400, 100, 600, 650),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('genui-surface-tree')), findsOneWidget);
+      final preview = find.byKey(const Key('genui-widget-preview'));
+      expect(
+        find.descendant(
+          of: preview,
+          matching: find.text('First restaurant', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Select second instance'));
+      await tester.pumpAndSettle();
+      expect(controller.selection?.dataPath, '/items/1');
+      expect(
+        find.descendant(
+          of: preview,
+          matching: find.text('Second restaurant', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Select other'));
+      await tester.pumpAndSettle();
+      expect(controller.selection?.componentId, 'other');
+      expect(
+        find.byKey(const Key('editable-genui-studio-dialog')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('moves, resizes and restores the studio bounds', (tester) async {
     tester.view.physicalSize = const Size(1600, 900);
     addTearDown(tester.view.resetPhysicalSize);
@@ -556,7 +706,7 @@ void main() {
     expect(tester.getRect(splitter).left, adjustedSplit);
     await tester.drag(
       find.byKey(const Key('genui-studio-resize')),
-      const Offset(-520, -200),
+      const Offset(-720, -200),
     );
     await tester.pumpAndSettle();
     expect(tester.getRect(window).width, lessThan(original.width));

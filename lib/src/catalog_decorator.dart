@@ -22,6 +22,7 @@ CatalogItem decorateEditableCatalogItem(
         componentId: context.id,
         componentType: context.type,
         definitionRevision: controller.snapshot.revision,
+        dataPath: context.dataContext.path.toString(),
       ),
       child: child,
     );

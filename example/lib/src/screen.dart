@@ -235,6 +235,18 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         controller: _session.editor,
         galleryTypes: catalog.items.map((item) => item.name),
         galleryCatalog: catalog,
+        galleryViewModel: Map<String, Object?>.from(
+          _session.activeSurfaceIds.isEmpty
+              ? const {}
+              : _session.surfaceHost
+                        .contextFor(
+                          _session.editor.selection?.surfaceId ??
+                              _session.activeSurfaceIds.first,
+                        )
+                        .dataModel
+                        .getValue<Map>(DataPath.root) ??
+                    const {},
+        ),
         loadBounds: () => _studioBounds.bounds,
         saveBounds: _studioBounds.save,
         loadSplitFraction: () => _studioBounds.splitFraction,

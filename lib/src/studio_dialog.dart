@@ -40,33 +40,49 @@ Future<void> showEditableGenUiStudio({
   onPublishEditor,
   Future<Map<String, Object?>> Function()? loadDebugData,
   String? debugSubject,
-}) => showDialog<void>(
-  context: context,
-  barrierDismissible: false,
-  barrierColor: Colors.transparent,
-  builder: (_) => _StudioWindow(
-    controller: controller,
-    galleryTypes: galleryTypes.toList(growable: false),
-    galleryCatalog: galleryCatalog,
-    galleryViewModel: galleryViewModel,
-    loadBounds: loadBounds,
-    saveBounds: saveBounds,
-    loadSplitFraction: loadSplitFraction,
-    saveSplitFraction: saveSplitFraction,
-    loadDefaults: loadDefaults,
-    saveDefaults: saveDefaults,
-    presentationTagOptions: presentationTagOptions,
-    initialPresentationTags: initialPresentationTags,
-    initialPresentationRequest: initialPresentationRequest,
-    presentationTagLabel: presentationTagLabel,
-    onGenerateProposal: onGenerateProposal,
-    canPublishEditors: canPublishEditors,
-    onGenerateEditor: onGenerateEditor,
-    onPublishEditor: onPublishEditor,
-    loadDebugData: loadDebugData,
-    debugSubject: debugSubject,
+}) => Navigator.of(context, rootNavigator: true).push<void>(
+  _StudioRoute(
+    themes: InheritedTheme.capture(
+      from: context,
+      to: Navigator.of(context, rootNavigator: true).context,
+    ),
+    builder: (_) => _StudioWindow(
+      controller: controller,
+      galleryTypes: galleryTypes.toList(growable: false),
+      galleryCatalog: galleryCatalog,
+      galleryViewModel: galleryViewModel,
+      loadBounds: loadBounds,
+      saveBounds: saveBounds,
+      loadSplitFraction: loadSplitFraction,
+      saveSplitFraction: saveSplitFraction,
+      loadDefaults: loadDefaults,
+      saveDefaults: saveDefaults,
+      presentationTagOptions: presentationTagOptions,
+      initialPresentationTags: initialPresentationTags,
+      initialPresentationRequest: initialPresentationRequest,
+      presentationTagLabel: presentationTagLabel,
+      onGenerateProposal: onGenerateProposal,
+      canPublishEditors: canPublishEditors,
+      onGenerateEditor: onGenerateEditor,
+      onPublishEditor: onPublishEditor,
+      loadDebugData: loadDebugData,
+      debugSubject: debugSubject,
+    ),
   ),
 );
+
+// Leave the surface outside the floating editor interactive.
+final class _StudioRoute extends RawDialogRoute<void> {
+  _StudioRoute({required CapturedThemes themes, required WidgetBuilder builder})
+    : super(
+        barrierDismissible: false,
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            themes.wrap(SafeArea(child: Builder(builder: builder))),
+      );
+
+  @override
+  Widget buildModalBarrier() => const SizedBox.shrink();
+}
 
 final class _StudioWindow extends StatefulWidget {
   const _StudioWindow({
@@ -486,6 +502,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final compact = constraints.maxWidth < 820;
+      final collapseTree = constraints.maxWidth < 600;
       final colors = Theme.of(context).colorScheme;
       final toolbarIconStyle = IconButton.styleFrom(
         foregroundColor: colors.onInverseSurface,
@@ -504,7 +521,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
             },
             child: Scaffold(
               key: _scaffoldKey,
-              drawer: compact
+              drawer: collapseTree
                   ? Drawer(
                       width: min(360, constraints.maxWidth - 48),
                       child: SafeArea(
@@ -646,7 +663,7 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                       }
                     },
                     itemBuilder: (_) => [
-                      if (compact)
+                      if (collapseTree)
                         const PopupMenuItem(
                           value: 'structure',
                           child: Text('Open structure'),
@@ -707,12 +724,12 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                   SizedBox(width: compact ? 4 : 12),
                 ],
               ),
-              body: compact
+              body: collapseTree
                   ? (_galleryMode ? _galleryEditor() : _surfaceEditor())
                   : LayoutBuilder(
                       builder: (context, bodyConstraints) {
                         final available = bodyConstraints.maxWidth - 12;
-                        final minFraction = 260 / available;
+                        final minFraction = 220 / available;
                         final maxFraction = 1 - 320 / available;
                         final fraction = _splitFraction.clamp(
                           minFraction,
@@ -1038,24 +1055,67 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
     return words[0] + words.substring(1).toLowerCase();
   }
 
+  DataPath _nodeDataPath(String id) {
+    DataPath? visit(GenUiSurfaceNode node, DataPath path) {
+      if (node.id == id) return path;
+      final children = widget.controller.component(node.id)?['children'];
+      var childPath = path;
+      if (children is Map && children['path'] is String) {
+        final binding = DataPath(children['path'] as String);
+        childPath = binding.isAbsolute ? binding : path.join(binding);
+        final value = _modelValue(childPath);
+        final key = value is List && value.isNotEmpty
+            ? '0'
+            : value is Map && value.isNotEmpty
+            ? value.keys.first.toString()
+            : null;
+        if (key != null) childPath = childPath.join(DataPath(key));
+      }
+      for (final child in node.children) {
+        final found = visit(child, childPath);
+        if (found != null) return found;
+      }
+      return null;
+    }
+
+    final root = buildGenUiSurfaceTree(widget.controller.snapshot);
+    return root == null
+        ? DataPath.root
+        : visit(root, DataPath.root) ?? DataPath.root;
+  }
+
+  Object? _modelValue(DataPath path) {
+    Object? value = widget.galleryViewModel;
+    for (final segment in path.segments) {
+      final key = segment.replaceAll('~1', '/').replaceAll('~0', '~');
+      if (value is Map) {
+        value = value[key];
+      } else if (value is List) {
+        final index = int.tryParse(key);
+        value = index != null && index >= 0 && index < value.length
+            ? value[index]
+            : null;
+      } else {
+        return null;
+      }
+    }
+    return value;
+  }
+
   String? _textPreview(GenUiSurfaceNode node) {
     if (node.type != 'Text') return null;
     final raw = widget.controller.component(node.id)?['text'];
     Object? value = raw;
     if (raw is Map && raw['path'] is String) {
-      final path = (raw['path'] as String)
-          .split('/')
-          .where((part) => part.isNotEmpty)
-          .toList();
-      if (path.firstOrNull == 'data') path.removeAt(0);
-      value = widget.galleryViewModel;
-      for (final part in path) {
-        if (value is! Map) {
-          value = null;
-          break;
-        }
-        value = value[part.replaceAll('~1', '/').replaceAll('~0', '~')];
+      var path = DataPath(raw['path'] as String);
+      // Older callers may supply a view model without the /data prefix.
+      if (path.segments.firstOrNull == 'data' &&
+          !widget.galleryViewModel.containsKey('data')) {
+        path = DataPath('/' + path.segments.skip(1).join('/'));
       }
+      value = _modelValue(
+        path.isAbsolute ? path : _nodeDataPath(node.id).join(path),
+      );
       value ??= raw['path'];
     }
     if (value is! String || value.trim().isEmpty) return null;
@@ -1101,7 +1161,8 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
       return _previewFrame(Text(selection.componentType));
     }
     final key =
-        '${selection.componentId}:${widget.controller.snapshot.revision}';
+        '${selection.componentId}:${selection.dataPath}:'
+        '${widget.controller.snapshot.revision}';
     if (_selectedPreviewSurface == null || _selectedPreviewKey != key) {
       _selectedPreviewSurface?.dispose();
       _selectedPreviewSurface = null;
@@ -1120,12 +1181,39 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
       final selected = findNode(root);
       if (selected != null) {
         final components = <Map<String, Object?>>[];
-        void addNode(GenUiSurfaceNode node) {
+        final selectedPath = selection.dataPath != null
+            ? DataPath(selection.dataPath!)
+            : _nodeDataPath(selected.id);
+        void addNode(GenUiSurfaceNode node, {bool rebase = true}) {
           final source = widget.controller.component(node.id);
           if (source == null) return;
-          components.add({...source, if (node.id == selected.id) 'id': 'root'});
+          Object? bindPaths(Object? value) {
+            if (value is List) return value.map(bindPaths).toList();
+            if (value is Map) {
+              return <String, Object?>{
+                for (final entry in value.entries)
+                  entry.key
+                      as String: entry.key == 'path' && entry.value is String
+                      ? ((entry.value as String).startsWith('/')
+                            ? entry.value
+                            : selectedPath
+                                  .join(DataPath(entry.value as String))
+                                  .toString())
+                      : bindPaths(entry.value),
+              };
+            }
+            return value;
+          }
+
+          components.add({
+            ...(rebase ? bindPaths(source) as Map<String, Object?> : source),
+            if (node.id == selected.id) 'id': 'root',
+          });
+          // Template children establish their own context for every instance.
+          final children = source['children'];
+          final hasTemplate = children is Map && children['path'] is String;
           for (final child in node.children) {
-            addNode(child);
+            addNode(child, rebase: rebase && !hasTemplate);
           }
         }
 

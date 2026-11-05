@@ -6,8 +6,9 @@ GenUI generates interfaces dynamically. GenUI Customizer lets developers and use
 
 Open the Studio over the live UI. **Triple-click** a widget on desktop or **long-press** it on touch devices to select it, then edit the properties the host application has made available. Changes appear immediately; undo, redo, discard, and save are supported. Manual editing does not require an AI service.
 
-<!-- SCREENSHOT: Studio open over the running application, with a selected widget and property editor visible. -->
-<!-- ![Studio editing a live GenUI surface](doc/images/studio-overview.png) -->
+![Studio editing a live GenUI surface with the component tree, selected text, and preview](https://raw.githubusercontent.com/Laszlo11-dev/genui_customizer/main/doc/images/studio-overview.png)
+
+Select a widget in the running app or component tree, then adjust its properties alongside a preview.
 
 ## Where it can help
 
@@ -27,13 +28,16 @@ Unlike a theme setting, the Studio can edit **individual rendered widgets** as w
 
 The Studio is a movable, resizable panel inside the running app. Changes are previewed as you make them. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
 
-<!-- SCREENSHOTS: Surface selection and editing; Gallery default editing. -->
-<!-- ![Surface mode](doc/images/surface-editing.png) -->
+![Text style selection in a compact Studio window over the live application](https://raw.githubusercontent.com/Laszlo11-dev/genui_customizer/main/doc/images/surface-editing.png)
+
+The compact Studio keeps the property editor and preview visible. Select another widget in the app without closing the Studio; edits to a shared template appear on every instance.
+
+<!-- SCREENSHOT: Gallery default editing. -->
 <!-- ![Gallery mode](doc/images/gallery-defaults.png) -->
 
 ## Example
 
-The [Restaurant Finder example](example/README.md) uses recorded agent responses by default. You can try selecting, editing, saving, and restoring customizations without configuring an AI service.
+Try the [live Restaurant Finder demo](https://laszlo11-dev.github.io/genui_customizer/) or follow the [example customization walkthrough](example/README.md). It uses recorded agent responses by default, so you can select, edit, save, and restore customizations without configuring an AI service.
 
 Optional AI integration can provide scoped property editing or propose new generated surfaces. Human edits and AI generation can be combined, subject to the host application's integration.
 
@@ -48,6 +52,8 @@ Optional AI integration can provide scoped property editing or propose new gener
 4. Store `GenUiAppearanceProfile` values and apply them to incoming `updateComponents` messages using stable presentation roles.
 
 Only host-approved properties are editable. Data bindings, actions, and component relationships remain protected. The host controls authorization, storage, and the scope of saved preferences.
+
+See the [installation and integration guide](example/INSTALL_GUIDE.md) for the complete example file map and the changes needed in another host application.
 
 For local development, the repository pins Flutter **3.47.9** in `.fvmrc` (`fvm use`).
 
