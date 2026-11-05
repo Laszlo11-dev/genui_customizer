@@ -397,6 +397,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AboutDialog), findsOneWidget);
     expect(find.text('Make generated UI your own.'), findsOneWidget);
+    expect(find.text('GitHub repository'), findsOneWidget);
     expect(find.text('View licenses'), findsOneWidget);
     await tester.tap(find.text('View licenses'));
     await tester.pumpAndSettle();

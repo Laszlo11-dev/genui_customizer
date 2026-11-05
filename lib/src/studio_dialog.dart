@@ -5,6 +5,7 @@ import 'package:a2ui_core/a2ui_core.dart' as core;
 import 'package:genui_customizer/src/core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
+import 'package:url_launcher/link.dart';
 
 import 'controller.dart';
 import 'debug_dialog.dart';
@@ -649,8 +650,24 @@ final class _EditableGenUiStudioState extends State<_EditableGenUiStudio> {
                           showAboutDialog(
                             context: context,
                             applicationName: 'GenUI Touch',
-                            children: const [
-                              Text('Make generated UI your own.'),
+                            children: [
+                              const Text('Make generated UI your own.'),
+                              const SizedBox(height: 12),
+                              Link(
+                                uri: Uri.https(
+                                  'github.com',
+                                  '/Laszlo11-dev/genui_customizer',
+                                ),
+                                target: LinkTarget.blank,
+                                builder: (context, followLink) => Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: TextButton.icon(
+                                    onPressed: followLink,
+                                    icon: const Icon(Icons.open_in_new),
+                                    label: const Text('GitHub repository'),
+                                  ),
+                                ),
+                              ),
                             ],
                           );
                         case 'debug':
