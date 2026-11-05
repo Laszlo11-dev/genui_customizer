@@ -1,3 +1,6 @@
+/// Framework-independent contracts, snapshots, and editing state for GenUI Touch.
+///
+/// Applications normally import `package:genui_customizer/genui_customizer.dart`.
 library;
 
 export 'catalog.dart';

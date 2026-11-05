@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'catalog.dart';
 import 'model.dart';
 
+/// Validates property edits and maintains a saved baseline plus undo/redo state.
+///
+/// Inputs must be JSON-serializable. Component IDs must be unique throughout the
+/// snapshot; isolate surfaces in separate sessions when they reuse IDs.
 final class EditableGenUiSession {
   EditableGenUiSession({
     required GenUiEditSnapshot initial,
@@ -17,12 +21,14 @@ final class EditableGenUiSession {
   final List<GenUiEditSnapshot> _redo = [];
   GenUiComponentSelection? _selection;
 
+  /// A deep copy of the current messages, safe to modify outside the session.
   GenUiEditSnapshot get current => _copySnapshot(_current);
   GenUiComponentSelection? get selection => _selection;
   bool get canUndo => _undo.isNotEmpty;
   bool get canRedo => _redo.isNotEmpty;
   bool get isDirty => !_sameMessages(_saved.messages, _current.messages);
 
+  /// Returns a detached component copy with an unmodifiable outer map, or null.
   Map<String, Object?>? component(String componentId) {
     final value = _findComponent(_current.messages, componentId);
     return value == null
@@ -30,6 +36,8 @@ final class EditableGenUiSession {
         : Map.unmodifiable(_copyMessages([value]).single);
   }
 
+  /// Selects an available, registered component and refreshes its revision.
+  /// Throws [FormatException] when the component cannot be selected.
   void select(GenUiComponentSelection selection) {
     final component = _findComponent(_current.messages, selection.componentId);
     if (component == null ||
@@ -44,6 +52,8 @@ final class EditableGenUiSession {
 
   void clearSelection() => _selection = null;
 
+  /// Applies all changes atomically after validation and clears redo history.
+  /// Throws [FormatException] without changing state for a rejected patch.
   GenUiEditSnapshot apply(GenUiPropertyPatch patch) {
     if (patch.expectedRevision != _current.revision) {
       throw const FormatException('The UI definition changed before the edit.');
@@ -90,6 +100,7 @@ final class EditableGenUiSession {
     return current;
   }
 
+  /// Restores the previous snapshot, including its revision; no-op if empty.
   GenUiEditSnapshot undo() {
     if (_undo.isEmpty) return current;
     _redo.add(_copySnapshot(_current));
@@ -98,6 +109,7 @@ final class EditableGenUiSession {
     return current;
   }
 
+  /// Restores the next snapshot from redo history; no-op if empty.
   GenUiEditSnapshot redo() {
     if (_redo.isEmpty) return current;
     _undo.add(_copySnapshot(_current));
@@ -106,6 +118,7 @@ final class EditableGenUiSession {
     return current;
   }
 
+  /// Restores the saved baseline and clears both history stacks.
   GenUiEditSnapshot cancel() {
     _current = _copySnapshot(_saved);
     _undo.clear();
@@ -114,6 +127,8 @@ final class EditableGenUiSession {
     return current;
   }
 
+  /// Marks [persisted], or the current snapshot, as the saved baseline.
+  /// Keeps history when newer edits still differ from that baseline.
   void markSaved([GenUiEditSnapshot? persisted]) {
     _saved = _copySnapshot(persisted ?? _current);
     if (!isDirty) {
@@ -122,6 +137,8 @@ final class EditableGenUiSession {
     }
   }
 
+  /// Replaces both saved and current state and clears undo/redo history.
+  /// This is a full replacement; hosts must merge incremental updates first.
   GenUiEditSnapshot reload(GenUiEditSnapshot snapshot) {
     _saved = _copySnapshot(snapshot);
     _current = _copySnapshot(snapshot);
@@ -143,6 +160,8 @@ final class EditableGenUiSession {
   }
 }
 
+/// Checks that two definitions differ only in permitted property values.
+/// Throws [FormatException] for structural, protected, or invalid changes.
 void validateEditableTransition({
   required List<Map<String, Object?>> baseMessages,
   required List<Map<String, Object?>> editedMessages,

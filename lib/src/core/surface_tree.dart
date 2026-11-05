@@ -17,6 +17,10 @@ final class GenUiSurfaceNode {
 /// Projects the current A2UI component references into a navigable tree.
 /// Malformed or cyclic references are omitted; the renderer remains the
 /// authority for whether a definition is valid.
+///
+/// Expects unique component IDs and a component named `root`. Returns null when
+/// that root is absent. This is a definition tree, not an expansion of repeated
+/// template instances from the live data model.
 GenUiSurfaceNode? buildGenUiSurfaceTree(GenUiEditSnapshot snapshot) {
   final components = <String, Map<String, Object?>>{};
   for (final message in snapshot.messages) {

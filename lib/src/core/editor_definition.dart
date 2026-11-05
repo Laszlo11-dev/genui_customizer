@@ -1,3 +1,7 @@
+/// Serializable components describing a property editor, rooted at `root`.
+///
+/// Components use the property editor's catalog rather than the host UI catalog.
+/// Treat constructor arguments as shared data; this class does not deep-copy them.
 final class EditablePropertyEditorDefinition {
   const EditablePropertyEditorDefinition({
     required this.id,
@@ -7,8 +11,11 @@ final class EditablePropertyEditorDefinition {
   final String id;
   final List<Map<String, Object?>> components;
 
+  /// Encodes the definition without copying its component data.
   Map<String, Object?> toJson() => {'id': id, 'components': components};
 
+  /// Checks basic IDs and component types, throwing [FormatException] for an
+  /// invalid envelope. Does not validate the component graph or catalog schema.
   factory EditablePropertyEditorDefinition.fromJson(Map<String, Object?> json) {
     final id = json['id'];
     final raw = json['components'];

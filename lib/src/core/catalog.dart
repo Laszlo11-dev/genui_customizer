@@ -1,7 +1,12 @@
 import 'editor_definition.dart';
 
+/// Value types accepted by a property contract.
+///
+/// The default property editor currently renders enumeration controls only;
+/// other types require a custom integration for user input.
 enum EditablePropertyType { enumeration, string, boolean, number }
 
+/// Defines one property the host permits manual or AI patches to change.
 final class EditablePropertyContract {
   const EditablePropertyContract({
     required this.name,
@@ -16,9 +21,14 @@ final class EditablePropertyContract {
   final String label;
   final EditablePropertyType type;
   final List<String> enumValues;
+
+  /// Rejects null values when true; does not insert a missing property.
   final bool required;
+
+  /// Maximum Dart string length, applied only to string properties.
   final int? maximumLength;
 
+  /// Checks type and configured constraints, allowing null unless required.
   bool accepts(Object? value) {
     if (value == null) return !required;
     return switch (type) {
@@ -33,6 +43,10 @@ final class EditablePropertyContract {
   }
 }
 
+/// Allowlist of editable properties for an A2UI component type.
+///
+/// Properties absent from [properties] cannot be patched. Explicit entries in
+/// [protectedProperties] take precedence over the allowlist.
 final class EditableComponentContract {
   EditableComponentContract({
     required this.type,
@@ -46,9 +60,15 @@ final class EditableComponentContract {
   final String type;
   final Map<String, EditablePropertyContract> properties;
   final Set<String> protectedProperties;
+
+  /// Host metadata; setting this does not enable structural editing in sessions.
   final bool allowChildrenEdit;
 }
 
+/// Host-owned component contracts and optional property editor definitions.
+///
+/// Keep [catalogId] stable and change [catalogVersion] when saved appearance
+/// rules need a different interpretation. The host owns profile migration.
 final class EditableCatalogRegistry {
   EditableCatalogRegistry({
     required this.catalogId,
@@ -65,9 +85,11 @@ final class EditableCatalogRegistry {
   final Map<String, EditableComponentContract> components;
   final Map<String, EditablePropertyEditorDefinition> customEditors;
 
+  /// Returns the contract, or null if the component type is not editable.
   EditableComponentContract? contractFor(String componentType) =>
       components[componentType];
 
+  /// Returns a host-provided editor, or null to use the default editor.
   EditablePropertyEditorDefinition? editorFor(String componentType) =>
       customEditors[componentType];
 }
