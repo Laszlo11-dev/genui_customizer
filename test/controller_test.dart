@@ -69,6 +69,34 @@ void main() {
     expect(opens, 1);
     expect(controller.selection?.componentId, 'panel');
   });
+
+  testWidgets('surface replacement cancels a pending long press', (
+    tester,
+  ) async {
+    var opens = 0;
+    final controller = _controller(onOpen: () => opens++);
+    addTearDown(controller.dispose);
+    controller.handlePointerDown(
+      const PointerDownEvent(
+        pointer: 3,
+        position: Offset(20, 20),
+        kind: PointerDeviceKind.touch,
+      ),
+      const GenUiComponentSelection(
+        surfaceId: 'surface',
+        componentId: 'panel',
+        componentType: 'Panel',
+        definitionRevision: 1,
+      ),
+    );
+    await tester.pump();
+    controller.setSurfaceSnapshot(
+      const GenUiEditSnapshot(revision: 1, messages: []),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(opens, 0);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 EditableGenUiController _controller({required VoidCallback onOpen}) =>

@@ -15,7 +15,7 @@ enum _StudioCloseChoice { save, discard }
 
 /// Opens the floating editor and optional catalog gallery.
 ///
-/// Every type in [galleryTypes] needs a contract in [controller]'s registry.
+/// Gallery types without a contract in [controller]'s registry are omitted.
 Future<void> showEditableGenUiStudio({
   required BuildContext context,
   required EditableGenUiController controller,
@@ -52,7 +52,9 @@ Future<void> showEditableGenUiStudio({
     ),
     builder: (_) => _StudioWindow(
       controller: controller,
-      galleryTypes: galleryTypes.toList(growable: false),
+      galleryTypes: galleryTypes
+          .where((type) => controller.registry.contractFor(type) != null)
+          .toList(growable: false),
       galleryCatalog: galleryCatalog,
       galleryViewModel: galleryViewModel,
       loadBounds: loadBounds,

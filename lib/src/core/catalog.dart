@@ -1,5 +1,16 @@
 import 'editor_definition.dart';
 
+const _structuralProperties = {
+  'id',
+  'component',
+  'child',
+  'children',
+  'content',
+  'tabs',
+  'componentId',
+  'action',
+};
+
 /// Value types accepted by a property contract.
 ///
 /// The default property editor currently renders enumeration controls only;
@@ -28,9 +39,9 @@ final class EditablePropertyContract {
   /// Maximum Dart string length, applied only to string properties.
   final int? maximumLength;
 
-  /// Checks type and configured constraints, allowing null unless required.
-  /// Returns whether [value] satisfies this property's declared type and limits.
+  /// Checks type and limits while rejecting structural and action fields.
   bool accepts(Object? value) {
+    if (_structuralProperties.contains(name)) return false;
     if (value == null) return !required;
     return switch (type) {
       EditablePropertyType.enumeration =>

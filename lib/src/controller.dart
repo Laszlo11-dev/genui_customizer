@@ -215,6 +215,7 @@ final class EditableGenUiController extends ChangeNotifier {
     try {
       final loaded = await adapter.load();
       if (loaded != null) {
+        _clearPendingGestures();
         _baselineGeneration++;
         _session.reload(loaded);
         _error = null;
@@ -233,6 +234,7 @@ final class EditableGenUiController extends ChangeNotifier {
 
   /// Replaces the editable definition when an agent generates a new surface.
   void setSurfaceSnapshot(GenUiEditSnapshot value) {
+    _clearPendingGestures();
     _baselineGeneration++;
     _session.reload(value);
     _error = null;
@@ -332,6 +334,20 @@ final class EditableGenUiController extends ChangeNotifier {
     _tapCandidates.remove(pointer);
   }
 
+  void _clearPendingGestures() {
+    for (final timer in _longPressTimers.values) {
+      timer.cancel();
+    }
+    _longPressTimers.clear();
+    _pointerOrigins.clear();
+    _downCandidates.clear();
+    _tapCandidates.clear();
+    _tapCount = 0;
+    _lastTapAt = null;
+    _lastTapPosition = null;
+    _lastTapComponentId = null;
+  }
+
   void _publish() {
     _snapshotGeneration++;
     onSnapshotChanged?.call(snapshot);
@@ -346,9 +362,7 @@ final class EditableGenUiController extends ChangeNotifier {
 
   @override
   void dispose() {
-    for (final timer in _longPressTimers.values) {
-      timer.cancel();
-    }
+    _clearPendingGestures();
     super.dispose();
   }
 }

@@ -26,6 +26,7 @@ final class EditableGenUiSession {
   GenUiComponentSelection? get selection => _selection;
   bool get canUndo => _undo.isNotEmpty;
   bool get canRedo => _redo.isNotEmpty;
+
   /// Whether current messages differ from the last saved baseline.
   bool get isDirty => !_sameMessages(_saved.messages, _current.messages);
 
@@ -209,46 +210,45 @@ void validateEditableTransition({
   }
 }
 
-Object? _definitionSkeleton(Object? value) {
-  if (value is Map) {
-    if (value['id'] is String && value['component'] is String) {
-      return {'id': value['id'], 'component': value['component']};
-    }
-    return {
-      for (final entry in value.entries)
-        entry.key.toString(): _definitionSkeleton(entry.value),
-    };
-  }
-  if (value is List) {
-    return [for (final child in value) _definitionSkeleton(child)];
-  }
-  return value;
-}
+List<Map<String, Object?>> _definitionSkeleton(
+  List<Map<String, Object?>> messages,
+) => [
+  for (final message in messages)
+    {
+      ...message,
+      if (message['updateComponents'] case final Map update)
+        'updateComponents': {
+          ...update,
+          if (update['components'] case final List components)
+            'components': [
+              for (final raw in components)
+                if (raw is Map &&
+                    raw['id'] is String &&
+                    raw['component'] is String)
+                  {'id': raw['id'], 'component': raw['component']}
+                else
+                  raw,
+            ],
+        },
+    },
+];
 
 Map<String, Object?>? _findComponent(
   List<Map<String, Object?>> messages,
   String componentId,
 ) {
-  Map<String, Object?>? result;
-  void visit(Object? value) {
-    if (result != null) return;
-    if (value is Map) {
-      if (value['id'] == componentId && value['component'] is String) {
-        result = value.cast<String, Object?>();
-        return;
-      }
-      for (final child in value.values) {
-        visit(child);
-      }
-    } else if (value is List) {
-      for (final child in value) {
-        visit(child);
+  for (final message in messages) {
+    final update = message['updateComponents'];
+    if (update is! Map || update['components'] is! List) continue;
+    for (final value in update['components'] as List) {
+      if (value is Map &&
+          value['id'] == componentId &&
+          value['component'] is String) {
+        return value.cast<String, Object?>();
       }
     }
   }
-
-  visit(messages);
-  return result;
+  return null;
 }
 
 GenUiEditSnapshot _copySnapshot(GenUiEditSnapshot value) => GenUiEditSnapshot(
@@ -274,9 +274,13 @@ Map<String, Map<String, Object?>> _componentIndex(
   List<Map<String, Object?>> messages,
 ) {
   final result = <String, Map<String, Object?>>{};
-  void visit(Object? value) {
-    if (value is Map) {
-      if (value['id'] is String && value['component'] is String) {
+  for (final message in messages) {
+    final update = message['updateComponents'];
+    if (update is! Map || update['components'] is! List) continue;
+    for (final value in update['components'] as List) {
+      if (value is Map &&
+          value['id'] is String &&
+          value['component'] is String) {
         final component = value.cast<String, Object?>();
         final id = component['id']! as String;
         if (result.containsKey(id)) {
@@ -286,16 +290,7 @@ Map<String, Map<String, Object?>> _componentIndex(
         }
         result[id] = component;
       }
-      for (final child in value.values) {
-        visit(child);
-      }
-    } else if (value is List) {
-      for (final child in value) {
-        visit(child);
-      }
     }
   }
-
-  visit(messages);
   return result;
 }

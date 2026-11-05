@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:a2ui_core/a2ui_core.dart' as core;
 import 'package:genui_customizer/src/core/core.dart';
 import 'package:flutter/material.dart';
@@ -194,7 +196,8 @@ final class _GenUiPropertyEditorState
     )!;
     final custom = widget.controller.editorFor(selection.componentType);
     final definition = custom ?? _defaultEditor(contract);
-    final key = '${selection.componentType}:${definition.id}';
+    final key =
+        '${selection.componentType}:${definition.id}:${jsonEncode(definition.components)}';
     if (_surface == null || _definitionKey != key) {
       _surface?.dispose();
       _definitionKey = key;

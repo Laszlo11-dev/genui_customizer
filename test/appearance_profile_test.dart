@@ -95,4 +95,43 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('profile cannot replay a child link from an allowlisted contract', () {
+    final structuralRegistry = EditableCatalogRegistry(
+      catalogId: 'restaurant',
+      catalogVersion: 1,
+      components: [
+        EditableComponentContract(
+          type: 'Image',
+          properties: const [
+            EditablePropertyContract(
+              name: 'child',
+              label: 'Child',
+              type: EditablePropertyType.enumeration,
+              enumValues: ['other'],
+            ),
+          ],
+        ),
+      ],
+    );
+    final profile = GenUiAppearanceProfile(
+      catalogId: 'restaurant',
+      catalogVersion: 1,
+      rules: const [
+        GenUiAppearanceRule(
+          role: 'restaurant-image',
+          componentType: 'Image',
+          properties: {'child': 'other'},
+        ),
+      ],
+    );
+    expect(
+      () => profile.applyToMessage(
+        message: message('image', 'imageUrl', 'mediumFeature'),
+        registry: structuralRegistry,
+        roleFor: roleFor,
+      ),
+      throwsFormatException,
+    );
+  });
 }
