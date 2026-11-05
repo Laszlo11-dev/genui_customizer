@@ -55,6 +55,8 @@ Only host-approved properties are editable. Data bindings, actions, and componen
 
 See the [installation and integration guide](example/INSTALL_GUIDE.md) for the complete example file map and the changes needed in another host application.
 
+For AI coding agents integrating the package into an existing Flutter GenUI app, use the [genui-customizer-integration Dart Package Skill](skills/genui-customizer-integration/SKILL.md). It covers editable catalogs, selection gestures, local property editing, persistence, and replaying saved appearance after AI regeneration.
+
 For local development, the repository pins Flutter **3.47.9** in `.fvmrc` (`fvm use`).
 
 ## License
