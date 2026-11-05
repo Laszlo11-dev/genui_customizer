@@ -25,7 +25,9 @@ final class EditableGenUiSession {
 
   Map<String, Object?>? component(String componentId) {
     final value = _findComponent(_current.messages, componentId);
-    return value == null ? null : Map.unmodifiable(value);
+    return value == null
+        ? null
+        : Map.unmodifiable(_copyMessages([value]).single);
   }
 
   void select(GenUiComponentSelection selection) {
@@ -112,10 +114,12 @@ final class EditableGenUiSession {
     return current;
   }
 
-  void markSaved() {
-    _saved = _copySnapshot(_current);
-    _undo.clear();
-    _redo.clear();
+  void markSaved([GenUiEditSnapshot? persisted]) {
+    _saved = _copySnapshot(persisted ?? _current);
+    if (!isDirty) {
+      _undo.clear();
+      _redo.clear();
+    }
   }
 
   GenUiEditSnapshot reload(GenUiEditSnapshot snapshot) {

@@ -48,6 +48,8 @@ final class EditableGenUiController extends ChangeNotifier {
   String? _lastTapComponentId;
   int _tapCount = 0;
   bool _busy = false;
+  int _snapshotGeneration = 0;
+  int _baselineGeneration = 0;
   String? _error;
 
   GenUiEditSnapshot get snapshot => _session.current;
@@ -115,14 +117,17 @@ final class EditableGenUiController extends ChangeNotifier {
   Future<void> prompt(String instruction) async {
     final selected = selection;
     final ai = composer;
-    if (!permissions.canUseAi || selected == null || ai == null) return;
+    if (_busy || !permissions.canUseAi || selected == null || ai == null)
+      return;
     final normalized = instruction.trim();
     if (normalized.isEmpty) return;
     final contract = registry.contractFor(selected.componentType)!;
+    final requestedSnapshot = snapshot;
+    final generation = _snapshotGeneration;
     _setBusy(true);
     try {
       final patch = await ai.propose(
-        snapshot: snapshot,
+        snapshot: requestedSnapshot,
         selection: selected,
         instruction: normalized,
         constraints: GenUiEditConstraints(
@@ -137,6 +142,17 @@ final class EditableGenUiController extends ChangeNotifier {
           protectedProperties: contract.protectedProperties,
         ),
       );
+      if (patch.componentId != selected.componentId) {
+        throw const FormatException('The AI edit targeted another component.');
+      }
+      if (patch.expectedRevision != requestedSnapshot.revision ||
+          generation != _snapshotGeneration ||
+          selection?.surfaceId != selected.surfaceId ||
+          selection?.componentId != selected.componentId) {
+        throw const FormatException(
+          'The UI changed before the AI edit returned.',
+        );
+      }
       _session.apply(patch);
       _error = null;
       _publish();
@@ -166,11 +182,15 @@ final class EditableGenUiController extends ChangeNotifier {
   }
 
   Future<void> save() async {
-    if (!permissions.canSave || storage == null || !isDirty) return;
+    if (_busy || !permissions.canSave || storage == null || !isDirty) return;
+    final persisted = snapshot;
+    final baselineGeneration = _baselineGeneration;
     _setBusy(true);
     try {
-      await storage!.save(snapshot);
-      _session.markSaved();
+      await storage!.save(persisted);
+      if (baselineGeneration == _baselineGeneration) {
+        _session.markSaved(persisted);
+      }
       _error = null;
       notifyListeners();
     } on Object catch (error) {
@@ -186,11 +206,12 @@ final class EditableGenUiController extends ChangeNotifier {
 
   Future<void> reload() async {
     final adapter = storage;
-    if (adapter == null) return;
+    if (_busy || adapter == null) return;
     _setBusy(true);
     try {
       final loaded = await adapter.load();
       if (loaded != null) {
+        _baselineGeneration++;
         _session.reload(loaded);
         _error = null;
         _publish();
@@ -208,6 +229,7 @@ final class EditableGenUiController extends ChangeNotifier {
 
   /// Replaces the editable definition when an agent generates a new surface.
   void setSurfaceSnapshot(GenUiEditSnapshot value) {
+    _baselineGeneration++;
     _session.reload(value);
     _error = null;
     _publish();
@@ -307,6 +329,7 @@ final class EditableGenUiController extends ChangeNotifier {
   }
 
   void _publish() {
+    _snapshotGeneration++;
     onSnapshotChanged?.call(snapshot);
     notifyListeners();
   }
