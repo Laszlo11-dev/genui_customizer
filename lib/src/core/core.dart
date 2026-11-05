@@ -1,6 +1,7 @@
 /// Framework-independent contracts, snapshots, and editing state for GenUI Touch.
 ///
 /// Applications normally import `package:genui_customizer/genui_customizer.dart`.
+/// This barrel also exposes the independent session for non-widget integrations.
 library;
 
 export 'catalog.dart';

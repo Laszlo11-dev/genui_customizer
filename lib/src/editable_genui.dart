@@ -2,6 +2,7 @@ import 'package:genui_customizer/src/core/core.dart';
 
 import 'controller.dart';
 
+/// Creates an editing controller around a host-owned A2UI definition.
 abstract final class EditableGenUi {
   static EditableGenUiController attach({
     required GenUiEditSnapshot initial,
@@ -26,6 +27,7 @@ abstract final class EditableGenUi {
 
 /// Entry point for embedding the runtime customizer in a GenUI application.
 abstract final class GenUiCustomizer {
+  /// Attaches editing state; the host must render published snapshot changes.
   static EditableGenUiController attach({
     required GenUiEditSnapshot initial,
     required EditableCatalogRegistry registry,

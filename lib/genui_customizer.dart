@@ -1,3 +1,4 @@
+/// Public API for runtime editing and previewing host-approved GenUI properties.
 library;
 
 export 'src/core/core.dart';

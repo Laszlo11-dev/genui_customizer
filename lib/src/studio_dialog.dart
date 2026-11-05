@@ -13,6 +13,9 @@ import 'property_editor.dart';
 
 enum _StudioCloseChoice { save, discard }
 
+/// Opens the floating editor and optional catalog gallery.
+///
+/// Every type in [galleryTypes] needs a contract in [controller]'s registry.
 Future<void> showEditableGenUiStudio({
   required BuildContext context,
   required EditableGenUiController controller,

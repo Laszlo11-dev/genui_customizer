@@ -20,6 +20,7 @@ final class GenUiComponentSelection {
   final int definitionRevision;
 
   /// Data context of the clicked instance, including template indices.
+  /// Context of a rendered instance; editing still targets its definition ID.
   final String? dataPath;
 
   /// Copies this selection with the revision of a new editing state.

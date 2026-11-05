@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+/// Shows host-provided generation diagnostics beside the current A2UI JSON.
 Future<void> showGenUiDebugDialog({
   required BuildContext context,
   required Future<Map<String, Object?>> Function() load,

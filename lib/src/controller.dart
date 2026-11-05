@@ -4,8 +4,10 @@ import 'package:genui_customizer/src/core/core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 
+/// Chooses the pointer gesture that opens an editable component.
 enum EditTrigger { adaptive, tripleClick, longPress }
 
+/// Host-supplied controls for editing, AI proposals, and saving.
 final class EditableGenUiPermissions {
   const EditableGenUiPermissions({
     this.canEdit = true,
@@ -18,6 +20,7 @@ final class EditableGenUiPermissions {
   final bool canSave;
 }
 
+/// Coordinates selection, edits, history, storage, and renderer notifications.
 final class EditableGenUiController extends ChangeNotifier {
   EditableGenUiController({
     required GenUiEditSnapshot initial,
@@ -94,6 +97,7 @@ final class EditableGenUiController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Applies a local edit to the selection and reports validation errors in [error].
   void apply(Map<String, Object?> changes) {
     final selected = selection;
     if (selected == null) return;

@@ -11,6 +11,7 @@ final class GenUiSurfaceNode {
 
   final String id;
   final String type;
+  /// Referenced definition children, without expanding repeated data instances.
   final List<GenUiSurfaceNode> children;
 }
 

@@ -26,6 +26,7 @@ final class EditableGenUiSession {
   GenUiComponentSelection? get selection => _selection;
   bool get canUndo => _undo.isNotEmpty;
   bool get canRedo => _redo.isNotEmpty;
+  /// Whether current messages differ from the last saved baseline.
   bool get isDirty => !_sameMessages(_saved.messages, _current.messages);
 
   /// Returns a detached component copy with an unmodifiable outer map, or null.

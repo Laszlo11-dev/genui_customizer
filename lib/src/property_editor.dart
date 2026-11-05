@@ -8,6 +8,7 @@ import 'controller.dart';
 
 const _editorCatalogId = 'https://openai.com/genui/editable/editor/v1';
 
+/// Opens the compact editor for the controller's current selection.
 Future<void> showEditableGenUiEditorDialog({
   required BuildContext context,
   required EditableGenUiController controller,
@@ -163,6 +164,7 @@ final class _EditableGenUiEditorDialogState
   );
 }
 
+/// Renders the selected component's configured property controls.
 final class EditableGenUiPropertyEditor extends StatefulWidget {
   const EditableGenUiPropertyEditor({required this.controller, super.key});
 

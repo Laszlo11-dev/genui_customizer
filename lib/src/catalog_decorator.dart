@@ -4,6 +4,7 @@ import 'package:genui/genui.dart';
 
 import 'controller.dart';
 
+/// Adds selection gestures to a renderer catalog item when its type is editable.
 CatalogItem decorateEditableCatalogItem(
   CatalogItem item,
   EditableGenUiController controller,

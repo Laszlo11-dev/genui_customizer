@@ -8,6 +8,7 @@ final class EditablePropertyEditorDefinition {
     required this.components,
   });
 
+  /// Stable identity used when the property editor selects a definition.
   final String id;
   final List<Map<String, Object?>> components;
 

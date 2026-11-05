@@ -44,6 +44,7 @@ final class GenUiAppearanceProfile {
     'rules': [for (final rule in rules) rule.toJson()],
   };
 
+  /// Decodes a stored profile envelope, rejecting an unsupported format.
   factory GenUiAppearanceProfile.fromJson(Map<String, Object?> json) {
     if (json['formatVersion'] != 1 ||
         json['catalogId'] is! String ||

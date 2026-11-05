@@ -29,6 +29,7 @@ final class EditablePropertyContract {
   final int? maximumLength;
 
   /// Checks type and configured constraints, allowing null unless required.
+  /// Returns whether [value] satisfies this property's declared type and limits.
   bool accepts(Object? value) {
     if (value == null) return !required;
     return switch (type) {
