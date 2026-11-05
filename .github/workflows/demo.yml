@@ -10,6 +10,7 @@ on:
       - pubspec.lock
       - lib/**
       - example/**
+      - doc/images/**
   workflow_dispatch:
 
 permissions:
@@ -35,6 +36,10 @@ jobs:
       - name: Build web demo
         working-directory: example
         run: flutter build web --release --base-href /genui_customizer/
+      - name: Include README screenshots
+        run: |
+          mkdir -p example/build/web/doc/images
+          cp doc/images/*.png example/build/web/doc/images/
       - uses: actions/upload-pages-artifact@v4
         with:
           path: example/build/web
