@@ -2,6 +2,8 @@
 
 **Experimental runtime visual editor for Flutter GenUI.**
 
+[Try the Restaurant Finder web demo](https://laszlo11-dev.github.io/genui_customizer/).
+
 This project explores the space between traditional, statically designed user interfaces and fully AI-generated dynamic interfaces.
 
 Static UIs provide predictability and precise control, but limited flexibility. Fully dynamic UIs offer adaptability, but can be difficult to customize, control, and keep consistent.

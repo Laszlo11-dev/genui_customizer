@@ -1,0 +1,53 @@
+name: Deploy example demo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/demo.yml
+      - .fvmrc
+      - pubspec.yaml
+      - pubspec.lock
+      - lib/**
+      - example/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: .fvmrc
+          cache: true
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      - name: Build web demo
+        working-directory: example
+        run: flutter build web --release --base-href /genui_customizer/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: example/build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
