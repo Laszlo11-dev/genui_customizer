@@ -44,3 +44,5 @@ pubspec_overrides.yaml
 
 # FVM Version Cache
 .fvm/
+/doc/product_demo/
+/tool/product_demo/

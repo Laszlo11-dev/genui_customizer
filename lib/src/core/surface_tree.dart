@@ -3,14 +3,11 @@ import 'model.dart';
 /// A component as it appears in an A2UI surface, independent of Flutter's
 /// rendered widget tree.
 final class GenUiSurfaceNode {
-  const GenUiSurfaceNode({
-    required this.id,
-    required this.type,
-    required this.children,
-  });
+  const GenUiSurfaceNode({required this.id, required this.type, required this.children});
 
   final String id;
   final String type;
+
   /// Referenced definition children, without expanding repeated data instances.
   final List<GenUiSurfaceNode> children;
 }
@@ -71,11 +68,7 @@ GenUiSurfaceNode? buildGenUiSurfaceTree(GenUiEditSnapshot snapshot) {
       final child = visit(childId, nextAncestors);
       if (child != null) children.add(child);
     }
-    return GenUiSurfaceNode(
-      id: id,
-      type: component['component'] as String,
-      children: children,
-    );
+    return GenUiSurfaceNode(id: id, type: component['component'] as String, children: children);
   }
 
   return visit('root', const {});

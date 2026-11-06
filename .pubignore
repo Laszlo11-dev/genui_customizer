@@ -49,3 +49,4 @@ pubspec_overrides.yaml
 /.fvmrc
 /tool/
 /examples/
+/doc/product_demo/
