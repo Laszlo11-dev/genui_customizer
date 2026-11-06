@@ -10,18 +10,23 @@ import 'package:url_launcher/link.dart';
 import 'controller.dart';
 import 'debug_dialog.dart';
 import 'property_editor.dart';
+import 'studio_bounds_persistence.dart';
 
 enum _StudioCloseChoice { save, discard }
 
 /// Opens the floating editor and optional catalog gallery.
 ///
 /// Gallery types without a contract in [controller]'s registry are omitted.
+/// Pass [boundsPersistence] as null to disable the default bounds storage.
+/// Existing [loadBounds] and [saveBounds] callbacks override it together.
 Future<void> showEditableGenUiStudio({
   required BuildContext context,
   required EditableGenUiController controller,
   required Iterable<String> galleryTypes,
   Catalog? galleryCatalog,
   Map<String, Object?> galleryViewModel = const {},
+  StudioBoundsPersistence? boundsPersistence =
+      const SharedPreferencesStudioBoundsPersistence(),
   Rect? Function()? loadBounds,
   void Function(Rect bounds)? saveBounds,
   double? Function()? loadSplitFraction,
@@ -44,38 +49,62 @@ Future<void> showEditableGenUiStudio({
   onPublishEditor,
   Future<Map<String, Object?>> Function()? loadDebugData,
   String? debugSubject,
-}) => Navigator.of(context, rootNavigator: true).push<void>(
-  _StudioRoute(
-    themes: InheritedTheme.capture(
-      from: context,
-      to: Navigator.of(context, rootNavigator: true).context,
+}) async {
+  final useDefaultBounds = loadBounds == null && saveBounds == null;
+  Rect? storedBounds;
+  Future<void> pendingBoundsSave = Future<void>.value();
+  if (useDefaultBounds && boundsPersistence != null) {
+    try {
+      storedBounds = await boundsPersistence.load();
+    } on Object {
+      // Unavailable or invalid app storage does not prevent editing.
+    }
+  }
+  if (!context.mounted) return;
+  await Navigator.of(context, rootNavigator: true).push<void>(
+    _StudioRoute(
+      themes: InheritedTheme.capture(
+        from: context,
+        to: Navigator.of(context, rootNavigator: true).context,
+      ),
+      builder: (_) => _StudioWindow(
+        controller: controller,
+        galleryTypes: galleryTypes
+            .where((type) => controller.registry.contractFor(type) != null)
+            .toList(growable: false),
+        galleryCatalog: galleryCatalog,
+        galleryViewModel: galleryViewModel,
+        loadBounds: useDefaultBounds ? () => storedBounds : loadBounds,
+        saveBounds: useDefaultBounds && boundsPersistence != null
+            ? (bounds) {
+                pendingBoundsSave = pendingBoundsSave.then((_) async {
+                  try {
+                    await boundsPersistence.save(bounds);
+                  } on Object {
+                    // Keep editing available when app storage cannot be written.
+                  }
+                });
+              }
+            : saveBounds,
+        loadSplitFraction: loadSplitFraction,
+        saveSplitFraction: saveSplitFraction,
+        loadDefaults: loadDefaults,
+        saveDefaults: saveDefaults,
+        presentationTagOptions: presentationTagOptions,
+        initialPresentationTags: initialPresentationTags,
+        initialPresentationRequest: initialPresentationRequest,
+        presentationTagLabel: presentationTagLabel,
+        onGenerateProposal: onGenerateProposal,
+        canPublishEditors: canPublishEditors,
+        onGenerateEditor: onGenerateEditor,
+        onPublishEditor: onPublishEditor,
+        loadDebugData: loadDebugData,
+        debugSubject: debugSubject,
+      ),
     ),
-    builder: (_) => _StudioWindow(
-      controller: controller,
-      galleryTypes: galleryTypes
-          .where((type) => controller.registry.contractFor(type) != null)
-          .toList(growable: false),
-      galleryCatalog: galleryCatalog,
-      galleryViewModel: galleryViewModel,
-      loadBounds: loadBounds,
-      saveBounds: saveBounds,
-      loadSplitFraction: loadSplitFraction,
-      saveSplitFraction: saveSplitFraction,
-      loadDefaults: loadDefaults,
-      saveDefaults: saveDefaults,
-      presentationTagOptions: presentationTagOptions,
-      initialPresentationTags: initialPresentationTags,
-      initialPresentationRequest: initialPresentationRequest,
-      presentationTagLabel: presentationTagLabel,
-      onGenerateProposal: onGenerateProposal,
-      canPublishEditors: canPublishEditors,
-      onGenerateEditor: onGenerateEditor,
-      onPublishEditor: onPublishEditor,
-      loadDebugData: loadDebugData,
-      debugSubject: debugSubject,
-    ),
-  ),
-);
+  );
+  await pendingBoundsSave;
+}
 
 // Leave the surface outside the floating editor interactive.
 final class _StudioRoute extends RawDialogRoute<void> {
@@ -148,11 +177,18 @@ final class _StudioWindowState extends State<_StudioWindow> {
   @override
   void initState() {
     super.initState();
+    widget.controller.setStudioVisible(true);
     try {
       _bounds = widget.loadBounds?.call();
     } on Object {
       // Unavailable browser storage should not prevent editing.
     }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.setStudioVisible(false);
+    super.dispose();
   }
 
   Rect _fit(Rect bounds, Size viewport) {

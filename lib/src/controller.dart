@@ -51,6 +51,7 @@ final class EditableGenUiController extends ChangeNotifier {
   String? _lastTapComponentId;
   int _tapCount = 0;
   bool _busy = false;
+  bool _studioVisible = false;
   int _snapshotGeneration = 0;
   int _baselineGeneration = 0;
   String? _error;
@@ -78,6 +79,12 @@ final class EditableGenUiController extends ChangeNotifier {
 
   bool canSelect(String componentType) =>
       permissions.canEdit && registry.contractFor(componentType) != null;
+
+  /// A visible floating studio selects rendered components with one tap.
+  void setStudioVisible(bool visible) {
+    _studioVisible = visible;
+    _clearPendingGestures();
+  }
 
   void open(GenUiComponentSelection selection) {
     select(selection);
@@ -246,15 +253,16 @@ final class EditableGenUiController extends ChangeNotifier {
     PointerDownEvent event,
     GenUiComponentSelection candidate,
   ) {
-    if (_allowsTripleClick(event.kind) &&
-        event.buttons == kPrimaryMouseButton) {
+    if ((_studioVisible || _allowsTripleClick(event.kind)) &&
+        (event.kind == PointerDeviceKind.touch ||
+            event.buttons == kPrimaryMouseButton)) {
       final candidates = _tapCandidates.putIfAbsent(event.pointer, () => []);
       candidates.add(candidate);
       if (candidates.length == 1) {
         scheduleMicrotask(() => _registerTap(event.pointer, event.position));
       }
     }
-    if (!_allowsLongPress(event.kind)) return;
+    if (_studioVisible || !_allowsLongPress(event.kind)) return;
     final candidates = _downCandidates.putIfAbsent(event.pointer, () => []);
     candidates.add(candidate);
     _pointerOrigins[event.pointer] = event.position;
@@ -297,6 +305,10 @@ final class EditableGenUiController extends ChangeNotifier {
     final candidates = _tapCandidates.remove(pointer);
     if (candidates == null || candidates.isEmpty) return;
     final candidate = _deepest(candidates);
+    if (_studioVisible) {
+      select(candidate);
+      return;
+    }
     final now = DateTime.now();
     final sameTarget = _lastTapComponentId == candidate.componentId;
     final soonEnough =

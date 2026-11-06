@@ -2,6 +2,8 @@ import 'package:genui/genui.dart';
 import 'package:genui_customizer/genui_customizer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
   testWidgets('publishes a generated editor from the Gallery', (tester) async {
@@ -601,6 +603,27 @@ void main() {
                 ),
                 Positioned(
                   left: 0,
+                  top: 120,
+                  child: Listener(
+                    behavior: HitTestBehavior.opaque,
+                    onPointerDown: (event) => controller.handlePointerDown(
+                      event,
+                      GenUiComponentSelection(
+                        surfaceId: 'review',
+                        componentId: 'other',
+                        componentType: 'Text',
+                        definitionRevision: controller.snapshot.revision,
+                      ),
+                    ),
+                    child: const SizedBox(
+                      width: 180,
+                      height: 48,
+                      child: Text('Tap other widget'),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
                   bottom: 0,
                   child: TextButton(
                     onPressed: () => showEditableGenUiStudio(
@@ -646,6 +669,11 @@ void main() {
         findsOneWidget,
       );
       await tester.tap(find.text('Select other'));
+      await tester.pumpAndSettle();
+      expect(controller.selection?.componentId, 'other');
+      select('title');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tap other widget'));
       await tester.pumpAndSettle();
       expect(controller.selection?.componentId, 'other');
       expect(
@@ -732,5 +760,76 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
     expect(tester.getRect(window), adjusted);
+  });
+
+  testWidgets('remembers bounds by default and permits disabling storage', (
+    tester,
+  ) async {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = EditableGenUiController(
+      initial: const GenUiEditSnapshot(revision: 1, messages: []),
+      registry: EditableCatalogRegistry(
+        catalogId: 'test',
+        catalogVersion: 1,
+        components: [],
+      ),
+    );
+    addTearDown(controller.dispose);
+    var persist = true;
+    Future<void> open(BuildContext context) => persist
+        ? showEditableGenUiStudio(
+            context: context,
+            controller: controller,
+            galleryTypes: const [],
+          )
+        : showEditableGenUiStudio(
+            context: context,
+            controller: controller,
+            galleryTypes: const [],
+            boundsPersistence: null,
+          );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => open(context),
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    final window = find.byKey(const Key('editable-genui-studio-dialog'));
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    final initial = tester.getRect(window);
+    await tester.drag(
+      find.byKey(const Key('genui-studio-resize')),
+      const Offset(-300, -100),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const Key('genui-studio-drag')),
+      const Offset(80, 30),
+    );
+    await tester.pumpAndSettle();
+    final adjusted = tester.getRect(window);
+    expect(adjusted, isNot(initial));
+    await tester.tap(find.byTooltip('Close editor'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(window), adjusted);
+    await tester.tap(find.byTooltip('Close editor'));
+    await tester.pumpAndSettle();
+
+    persist = false;
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(window), initial);
   });
 }

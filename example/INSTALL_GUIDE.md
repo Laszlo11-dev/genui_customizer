@@ -344,10 +344,10 @@ The following additions are **optional**:
   component of a type. The example validates and stores these values under
   `restaurant_finder_gallery_defaults_v1`. Apply them before role-specific
   rules in step 4; a role rule then takes precedence.
-- **Window placement:** Supply `loadBounds` and `saveBounds` if GenUI Touch
-  should remember its movable, resizable window. The example's
-  `lib/src/studio_bounds_store.dart` validates stored bounds and queues writes.
-  Flush pending writes when GenUI Touch closes.
+- **Window placement:** GenUI Touch remembers its movable, resizable window
+  by default using app-local shared preferences. Pass
+  `boundsPersistence: null` to disable this, or supply `loadBounds` and
+  `saveBounds` together to use your own storage.
 - **AI editing:** Supply an `EditableGenUiComposer` to
   `GenUiCustomizer.attach` if you provide a trusted backend for privileged
   credentials and authorization. GenUI Touch's `onGenerateProposal` is a
@@ -362,7 +362,7 @@ The following additions are **optional**:
 | `lib/src/main.dart` | Keeps the Restaurant Finder app, Material theme, and theme toggle. Customizer initialization is scoped to the session, not the application root. |
 | `lib/src/session.dart` | Holds the contracts, decorated catalog, controller, A2UI interception, role mapping, profile and gallery persistence, transport choice, reset, and disposal. This is the main integration file. |
 | `lib/src/screen.dart` | Renders generated surfaces and adds GenUI Touch/reset actions; supplies GenUI Touch's gallery and bounds adapters. |
-| `lib/src/studio_bounds_store.dart` | Adds optional local persistence for GenUI Touch window placement. |
+| `lib/src/studio_bounds_store.dart` | Demonstrates a custom window placement adapter; the package also persists bounds by default. |
 | `lib/src/primitives.dart` | Keeps ordinary Restaurant Finder UI helpers: theme button, error banner, and loading text. No customizer API is needed here. |
 | `assets/first_search.json`, `assets/next_search.json` | Record two agent responses so saved appearance can be exercised against different data and component IDs without a live agent. |
 | `assets/images/` | Holds restaurant images referenced by recorded results. |
