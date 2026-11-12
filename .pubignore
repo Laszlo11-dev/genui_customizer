@@ -48,6 +48,5 @@ pubspec_overrides.yaml
 /.github/
 /.fvmrc
 /tool/
-/next/
 /doc/product_demo/
 /backups/

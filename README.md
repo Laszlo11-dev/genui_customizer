@@ -1,68 +1,81 @@
 # GenUI Touch
 
-**Make generated UI your own.**
+**Make generated UI your own.** GenUI Touch adds runtime appearance editing to A2UI Flutter surfaces. A user can select a rendered component, change properties approved by the host app, and see the result immediately. Manual editing does not require an AI service.
 
-GenUI generates interfaces dynamically. GenUI Touch lets developers and users adjust the appearance of A2UI Flutter surfaces **in the running application**, without changing source code or editing A2UI JSON.
+> **Breaking change in 0.2.0-dev.1:** GenUI Touch has been rewritten for **A2UI v1.0**, `a2ui_core` 0.7.x, and `a2ui_flutter` 0.3.x. The 0.1.x `genui` API has been removed. Existing 0.1.x integrations must be updated; this release is not source compatible, and it does not automatically migrate saved 0.1.x snapshots or appearance profiles.
 
-Open GenUI Touch over the live UI. **Triple-click** a widget on desktop or **long-press** it on touch devices to select it, then edit the properties the host application has made available. Changes appear immediately, with undo and redo for local edits. Gallery defaults can be discarded or saved when the host supplies storage. Manual editing does not require an AI service.
+## What it does
 
-The screenshots below show the earlier 0.1.x Restaurant Finder host. They illustrate the editing workflow; the current A2UI host is the [chat example](example/).
+GenUI Touch works inside a running host app. **Triple-click** a component on desktop, **long-press** it on touch devices, or select it from the Studio's component tree. The host decides which catalog properties are editable. Touch changes approved presentation literals through the host's A2UI `MessageProcessor`; it does not edit data bindings, actions, component relationships, or identifiers.
 
-<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="Earlier 0.1.x GenUI Touch editing a live surface" width="400">
-
-Select a widget in the running app or component tree, then adjust its properties alongside a preview.
-
-## Where it can help
-
-- **Developer:** inspect and tune generated widgets in their real application context, without rebuilding or making another AI call for every visual change.
-- **Designer:** refine typography, spacing, images, and other available visual properties directly on a working interface.
-- **Multi-tenant app administrator:** adjust catalog widget defaults for a company or team, with the scope and permissions managed by the host app.
-- **End user:** personalize selected parts of their own interface, manually or with optional AI assistance.
-
-Unlike a theme setting, GenUI Touch can edit **individual rendered widgets** as well as **defaults for catalog widget types**. It does not replace an application's theme or design system.
-
-## Two editing modes
+The floating Studio has two modes:
 
 | Surface | Gallery |
 | --- | --- |
-| Customize a specific widget in the current generated UI. | Customize default property values for a widget type. |
-| Select it by triple-click, long-press, or from the component tree. | Select a catalog widget and edit its preview. |
+| Edit a component on the current surface. Local edits support undo and redo. | Edit defaults for a catalog component type. Defaults apply to later component updates. |
 
-The A2UI implementation uses `a2ui_core` 0.7.x, `a2ui_flutter` 0.3.x, and A2UI v1.0. Its Studio is a floating, movable, resizable dialog in the running app. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
+The Studio can be moved and resized. Its window bounds are stored locally by default. A host can provide a Gallery preview widget and `TouchStorage` for appearance preferences. A local Surface edit is not automatically saved as a reusable preference: the host must assign a stable presentation role, then save a role default for that property.
+
+## Integrate with an A2UI host
+
+The host continues to own the catalogs, `MessageProcessor`, agent transport, action handling, authorization, and storage. Register only visual properties that the catalog schema permits:
+
+```dart
+final base = basicCatalog(); // package:a2ui_flutter/basic_catalog.dart
+final touch = GenUiTouchController(
+  contracts: [
+    TouchContract(
+      catalogId: base.id,
+      componentType: 'Text',
+      properties: const [
+        TouchProperty(
+          name: 'variant',
+          label: 'Text style',
+          kind: TouchValueKind.choice,
+          choices: ['body', 'caption'],
+        ),
+      ],
+    ),
+  ],
+);
+
+final processor = MessageProcessor<ComponentImplementation>(
+  catalogs: [touch.decorateCatalog(base)],
+);
+touch.attachProcessor(processor);
+
+// Route every incoming A2UI v1.0 message through Touch before rendering.
+touch.processAgentMessages(agentMessages);
+
+// Render A2uiSurface(surface: processor.model.getSurface(surfaceId)!).
+// Open showGenUiTouchStudio(context: context, controller: touch, surfaceId: surfaceId).
+```
+
+Every incoming message for the attached processor must pass through `processAgentMessages`; messages must declare A2UI version `1.0`. Touch applies saved appearance rules to later agent messages before the processor handles them. Incoming agent updates that replace an edited component supersede that component's local undo history.
+
+To persist preferences, implement `TouchStorage`, load its `TouchProfile` before new generated surfaces arrive, and scope storage to the right user or tenant. `setGalleryDefault` saves a default for future components of one catalog type. To carry a selected value across regenerated content with new component IDs, supply a stable `TouchRoleResolver` and call `setRoleDefaultForSelection` for that property, then `save()`. The optional `TouchPropertyComposer` lets a host AI service propose a value; Touch checks it against the same contract before applying it.
+
+The [integration skill](skills/genui-customizer-integration/SKILL.md) gives further host guidance. The [example](example/) adapts the official A2UI Flutter chat app. It runs with a fixed offline demo reply by default and can use Gemini when configured; see its [run instructions](example/README.md). The example does not provide durable appearance storage.
+
+## Migrating from 0.1.x
+
+- Replace the old `genui` based integration with `a2ui_core` 0.7.x and `a2ui_flutter` 0.3.x. Use A2UI v1.0 messages.
+- Replace the old editable catalog registry and controller with `TouchContract`, `TouchProperty`, and `GenUiTouchController`. Decorate the catalog used by the host processor and attach that processor to Touch.
+- Route incoming messages through `processAgentMessages` instead of maintaining the old editable snapshot flow.
+- Rework persistence around the host-owned `TouchProfile` and `TouchStorage`. Migrate old saved data explicitly if your app needs it; automatic migration is not provided.
+
+The [migration plan](doc/a2ui-package-plan.md) records the redesign decisions. For the previous package behavior, use the 0.1.x release and its documentation in Git history.
+
+## Earlier screenshots
+
+These images show the 0.1.x Restaurant Finder host. They illustrate the editing concept, not the current A2UI chat example.
+
+<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="Earlier 0.1.x GenUI Touch Studio over Restaurant Finder" width="400">
 
 <img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png" alt="Earlier 0.1.x compact editing window" width="400">
 
-The compact GenUI Touch window keeps the property editor and preview visible. Select another widget in the app without closing GenUI Touch; edits to a shared template appear on every instance.
-
-## New example
-
-The [example](example/) adapts the official A2UI Flutter chat app and adds Touch. It can use Gemini, as the upstream app does, or a fixed offline demo reply without a key. The [package and example plan](doc/a2ui-package-plan.md) records the migration decisions.
-
-Optional AI integration can provide scoped property editing or propose new generated surfaces. Human edits and AI generation can be combined, subject to the host application's integration.
-
 <img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/complex-layout-ai-regeneration.png" alt="Earlier 0.1.x complex layout editing" width="400">
 
-Work with complex layouts, adjust individual widgets, or describe a new presentation and generate an AI proposal using the host application's AI integration.
+## License and status
 
-## Integration
-
-1. Register visual properties with `TouchContract` and `TouchProperty`.
-2. Wrap the A2UI catalog with `GenUiTouchController.decorateCatalog`, then attach the host's `MessageProcessor`.
-3. Send incoming v1.0 messages through `processAgentMessages` and display the host's `A2uiSurface`.
-4. Open `showGenUiTouchStudio` from `onStudioRequested`. Provide `TouchStorage` to persist reusable Gallery and role defaults.
-
-Only host-approved properties are editable. Data bindings, actions, and component relationships remain protected. The host controls authorization, storage, and the scope of saved preferences. A local widget edit is not automatically persisted; the host must assign a stable role and save a role preference to apply the value to later generated content.
-
-Version 0.2.0-dev.1 replaces the 0.1.x `genui` API and is not source compatible with it. See the [A2UI integration details](#integration), [example instructions](example/README.md), and [integration skill](skills/genui-customizer-integration/SKILL.md).
-
-For local development, the repository pins Flutter **3.47.9** in `.fvmrc` (`fvm use`).
-
-## License
-
-GenUI Touch is licensed under the [PolyForm Perimeter License 1.0.1](LICENSE).
-
-## Project status
-
-**Experimental.** APIs and behavior may change without backward compatibility. This project is developed with **heavy use of AI**, including AI-assisted coding; its implementation should be reviewed and tested accordingly.
-
-GenUI Touch focuses on runtime visual customization. It is **not a design-time UI builder** or a replacement for Flutter development tools. Feedback and contributions are welcome.
+GenUI Touch is licensed under the [PolyForm Perimeter License 1.0.1](LICENSE). The package is experimental; APIs and behavior may change. It is developed with heavy use of AI, including AI-assisted coding, so integrations should be reviewed and tested in their host apps.
