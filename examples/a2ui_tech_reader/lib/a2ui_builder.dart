@@ -1,6 +1,7 @@
 import 'package:a2ui_core/a2ui_core.dart';
 
 import 'models.dart';
+import 'ai_layout.dart';
 import 'news_gallery.dart';
 
 /// Produces the news stream as A2UI data, including its occasion styling.
@@ -13,6 +14,8 @@ class NewsA2uiBuilder {
     bool compact = false,
     bool loading = false,
     String? error,
+    AiLayout? aiLayout,
+    String? aiError,
   }) {
     final nodes = <Map<String, Object?>>[];
     final children = <String>[];
@@ -31,9 +34,19 @@ class NewsA2uiBuilder {
         'catalogId': newsGalleryCatalogId,
         'title': title,
         'eyebrow': ?eyebrow,
-        'backgroundColor': banner ? palette.banner : palette.card,
-        'textColor': banner ? palette.bannerInk : palette.ink,
-        'accentColor': banner ? palette.bannerAccent : palette.accent,
+        'backgroundColor': banner
+            ? (aiLayout?.bannerColor ?? palette.banner)
+            : palette.card,
+        'textColor': banner
+            ? (aiLayout == null
+                  ? palette.bannerInk
+                  : _inkFor(aiLayout.bannerColor))
+            : palette.ink,
+        'accentColor': banner
+            ? (aiLayout == null
+                  ? palette.bannerAccent
+                  : _inkFor(aiLayout.bannerColor))
+            : (aiLayout?.accentColor ?? palette.accent),
         'titleSize': banner ? 31 : 25,
         'padding': banner ? 22 : 0,
         'cornerRadius': banner ? 20 : 0,
@@ -63,22 +76,34 @@ class NewsA2uiBuilder {
         'open': {
           'event': {'name': 'open_$index'},
         },
-        'backgroundColor': feature ? palette.feature : palette.card,
-        'textColor': palette.ink,
-        'mutedColor': palette.muted,
-        'accentColor': palette.accent,
-        'borderColor': palette.border,
-        'cornerRadius': feature ? 24 : palette.radius,
+        'backgroundColor':
+            aiLayout?.cardColor ?? (feature ? palette.feature : palette.card),
+        'textColor': aiLayout == null
+            ? palette.ink
+            : _inkFor(aiLayout.cardColor),
+        'mutedColor': aiLayout == null
+            ? palette.muted
+            : (_inkFor(aiLayout.cardColor) == '#FFFFFF'
+                  ? '#E0DBF2'
+                  : palette.muted),
+        'accentColor': aiLayout?.accentColor ?? palette.accent,
+        'borderColor': aiLayout?.borderColor ?? palette.border,
+        'cornerRadius':
+            aiLayout?.cornerRadius ?? (feature ? 24 : palette.radius),
         'padding': feature ? 22 : 16,
-        'imageHeight': feature ? 250 : (wire ? 96 : 150),
-        'imagePosition': wire ? 'left' : 'top',
+        'imageHeight':
+            aiLayout?.imageHeight ?? (feature ? 250 : (wire ? 96 : 150)),
+        'imagePosition': aiLayout?.imagePosition ?? (wire ? 'left' : 'top'),
         'imageFit': 'cover',
-        'titleSize': feature ? 30 : (wire ? 19 : 22),
+        'titleSize':
+            aiLayout?.cardTitleSize ?? (feature ? 30 : (wire ? 19 : 22)),
         'titleWeight': feature ? 'bold' : 'medium',
         'summarySize': 14,
         'showSummary': !short,
         'showDate': true,
-        'buttonStyle': feature ? 'filled' : (wire ? 'text' : 'outline'),
+        'buttonStyle':
+            aiLayout?.buttonStyle ??
+            (feature ? 'filled' : (wire ? 'text' : 'outline')),
         'elevation': feature ? 2 : 0,
       });
       return id;
@@ -100,8 +125,8 @@ class NewsA2uiBuilder {
           for (final index in indices)
             story(index, variant: variant, short: short),
         ],
-        'columns': compact ? 1 : columns,
-        'gap': edition == Occasion.winter ? 12 : 18,
+        'columns': compact ? 1 : (aiLayout?.columns ?? columns),
+        'gap': aiLayout?.gap ?? (edition == Occasion.winter ? 12 : 18),
       });
       children.add(id);
     }
@@ -125,8 +150,35 @@ class NewsA2uiBuilder {
         'No stories found',
         'Choose another RSS source or refresh this feed.',
       );
+    } else if (edition == Occasion.askAi && aiLayout == null) {
+      if (aiError == null) {
+        status(
+          'Ask AI is designing the A2UI layout…',
+          'Gemini is choosing presentation values for the feed.',
+        );
+      } else {
+        section('status_title', 'Ask AI unavailable', banner: true);
+        section('ai_error_detail', aiError, eyebrow: 'Gemini response');
+      }
+      grid('ai_grid', all, 2);
     } else {
       switch (edition) {
+        case Occasion.askAi:
+          section(
+            'lead',
+            aiLayout!.bannerTitle,
+            eyebrow: aiLayout.bannerEyebrow,
+            banner: true,
+          );
+          switch (aiLayout.layoutStyle) {
+            case 'feature':
+              children.add(story(0, variant: 'feature'));
+              grid('ai_grid', all.skip(1).toList(), 2);
+            case 'wire':
+              grid('ai_grid', all, 1, variant: 'wire');
+            default:
+              grid('ai_grid', all, 2);
+          }
         case Occasion.everyday:
           section(
             'lead',
@@ -330,4 +382,25 @@ const _palettes = <Occasion, _Palette>{
     '#75629A',
     28,
   ),
+  Occasion.askAi: _Palette(
+    '#6B4BC3',
+    '#21203C',
+    '#625E78',
+    '#FFFFFF',
+    '#F5F0FF',
+    '#DCD3F3',
+    '#282145',
+    '#FFFFFF',
+    '#D3B9FF',
+    20,
+  ),
 };
+
+String _inkFor(String hex) {
+  final red = int.parse(hex.substring(1, 3), radix: 16);
+  final green = int.parse(hex.substring(3, 5), radix: 16);
+  final blue = int.parse(hex.substring(5, 7), radix: 16);
+  return (red * 299 + green * 587 + blue * 114) / 1000 >= 145
+      ? '#21203C'
+      : '#FFFFFF';
+}

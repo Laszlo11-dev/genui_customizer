@@ -8,25 +8,38 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'a2ui_builder.dart';
+import 'ai_layout.dart';
 import 'models.dart';
 import 'news_gallery.dart';
 import 'news_filter.dart';
 import 'rss_service.dart';
+import 'runtime_key_stub.dart'
+    if (dart.library.io) 'runtime_key_io.dart'
+    as runtime_key;
 
-void main() => runApp(const TechReaderApp());
+const _definedApiKey = String.fromEnvironment('GEMINI_API_KEY');
+
+void main() {
+  final key = _definedApiKey.isNotEmpty
+      ? _definedApiKey
+      : (runtime_key.geminiKeyFromProcess() ?? '');
+  runApp(TechReaderApp(apiKey: key.trim()));
+}
 
 class TechReaderApp extends StatelessWidget {
-  const TechReaderApp({super.key});
+  const TechReaderApp({super.key, this.apiKey = ''});
+  final String apiKey;
   @override
-  Widget build(BuildContext context) => const MaterialApp(
+  Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'A2UI Tech Reader',
-    home: ReaderPage(),
+    home: ReaderPage(apiKey: apiKey),
   );
 }
 
 class ReaderPage extends StatefulWidget {
-  const ReaderPage({super.key});
+  const ReaderPage({super.key, this.apiKey = ''});
+  final String apiKey;
   @override
   State<ReaderPage> createState() => _ReaderPageState();
 }
@@ -34,6 +47,11 @@ class ReaderPage extends StatefulWidget {
 class _ReaderPageState extends State<ReaderPage>
     with SingleTickerProviderStateMixin {
   final _rss = RssService();
+  GeminiLayoutService? _aiService;
+  AiLayout? _aiLayout;
+  String? _aiError;
+  String _aiPrompt = 'Holidays at Sea';
+  int _aiRequestId = 0;
   final _sourceController = TextEditingController(text: feedPresets.first.url);
   final _searchController = TextEditingController();
   late MessageProcessor<ComponentImplementation> _processor;
@@ -58,6 +76,9 @@ class _ReaderPageState extends State<ReaderPage>
   @override
   void initState() {
     super.initState();
+    if (widget.apiKey.isNotEmpty) {
+      _aiService = GeminiLayoutService(widget.apiKey);
+    }
     _feedTransition = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 380),
@@ -113,20 +134,15 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   void _render() {
-    final query = _searchController.text.trim().toLowerCase();
-    _renderedArticles = _articles.where((article) {
-      if (_hidePolitical && isPoliticalNews(article)) return false;
-      return query.isEmpty ||
-          '${article.title} ${article.summary} ${article.source}'
-              .toLowerCase()
-              .contains(query);
-    }).toList();
+    _renderedArticles = _filteredArticles();
     _messages = NewsA2uiBuilder.build(
       _renderedArticles,
       _active,
       compact: _compact,
       loading: _loading,
       error: _error,
+      aiLayout: _aiLayout,
+      aiError: _aiError,
     );
     final old = _processor;
     _processor = _newProcessor();
@@ -178,8 +194,20 @@ class _ReaderPageState extends State<ReaderPage>
 
   Future<void> _changeOccasion(Occasion? value) async {
     if (value == null || value == _occasion) return;
+    if (value == Occasion.askAi && _aiService == null) return;
+    String? prompt;
+    if (value == Occasion.askAi) {
+      prompt = await _editAiPrompt();
+      if (!mounted || prompt == null) return;
+    }
     final previous = _active;
-    setState(() => _occasion = value);
+    setState(() {
+      _occasion = value;
+      _aiLayout = null;
+      _aiError = null;
+    });
+    ++_aiRequestId;
+    if (prompt != null) _generateAiLayout(prompt);
     if (_active == previous) return;
     final changeId = ++_occasionChangeId;
     try {
@@ -190,6 +218,55 @@ class _ReaderPageState extends State<ReaderPage>
     } on TickerCanceled {
       // A newer occasion selection owns the transition.
     }
+  }
+
+  Future<String?> _editAiPrompt() async {
+    final prompt = await showDialog<String>(
+      context: context,
+      builder: (_) => _AiPromptDialog(initialPrompt: _aiPrompt),
+    );
+    if (prompt != null) _aiPrompt = prompt;
+    return prompt;
+  }
+
+  Future<void> _retryAiLayout() async {
+    final prompt = await _editAiPrompt();
+    if (!mounted || prompt == null) return;
+    _generateAiLayout(prompt);
+  }
+
+  Future<void> _generateAiLayout(String prompt) async {
+    final service = _aiService;
+    if (service == null || _occasion != Occasion.askAi) return;
+    final id = ++_aiRequestId;
+    setState(() {
+      _aiLayout = null;
+      _aiError = null;
+    });
+    _render();
+    try {
+      final layout = await service.create(prompt);
+      if (!mounted || id != _aiRequestId) return;
+      setState(() => _aiLayout = layout);
+    } catch (e) {
+      if (!mounted || id != _aiRequestId) return;
+      setState(() => _aiError = '$e');
+    }
+    _render();
+  }
+
+  List<NewsItem> _filteredArticles() {
+    final query = _searchController.text.trim().toLowerCase();
+    return _articles
+        .where((article) {
+          if (_hidePolitical && isPoliticalNews(article)) return false;
+          return query.isEmpty ||
+              '${article.title} ${article.summary} ${article.source}'
+                  .toLowerCase()
+                  .contains(query);
+        })
+        .take(24)
+        .toList();
   }
 
   void _showJson() {
@@ -226,6 +303,8 @@ class _ReaderPageState extends State<ReaderPage>
   @override
   void dispose() {
     _requestId++;
+    _aiRequestId++;
+    _aiService?.dispose();
     _feedTransition.dispose();
     _rss.dispose();
     _processor.dispose();
@@ -236,12 +315,16 @@ class _ReaderPageState extends State<ReaderPage>
 
   @override
   Widget build(BuildContext context) {
-    final style = styleFor(_active);
+    final layout = _active == Occasion.askAi ? _aiLayout : null;
+    final style = layout == null ? styleFor(_active) : styleForAi(layout);
     final theme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: style.accent,
         surface: style.surface,
+        brightness: style.ink == Colors.white
+            ? Brightness.dark
+            : Brightness.light,
       ),
       scaffoldBackgroundColor: style.background,
       textTheme: ThemeData.light().textTheme.apply(
@@ -359,6 +442,7 @@ class _ReaderPageState extends State<ReaderPage>
                     SizedBox(
                       width: 220,
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         key: ValueKey(_source),
                         initialValue: feedPresets.any((p) => p.name == _source)
                             ? _source
@@ -382,20 +466,39 @@ class _ReaderPageState extends State<ReaderPage>
                     SizedBox(
                       width: 260,
                       child: DropdownButtonFormField<Occasion>(
+                        isExpanded: true,
                         initialValue: _occasion,
                         decoration: const InputDecoration(
                           labelText: 'Occasion / A2UI layout',
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
-                        items: Occasion.values
-                            .map(
-                              (o) => DropdownMenuItem(
-                                value: o,
-                                child: Text(o.label),
-                              ),
-                            )
-                            .toList(),
+                        items: Occasion.values.map((o) {
+                          final locked =
+                              o == Occasion.askAi && _aiService == null;
+                          final disabledColor = Theme.of(context).disabledColor;
+                          return DropdownMenuItem(
+                            value: o,
+                            enabled: !locked,
+                            child: locked
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.lock_outline,
+                                        size: 16,
+                                        color: disabledColor,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        o.label,
+                                        style: TextStyle(color: disabledColor),
+                                      ),
+                                    ],
+                                  )
+                                : Text(o.label),
+                          );
+                        }).toList(),
                         onChanged: _changeOccasion,
                       ),
                     ),
@@ -416,7 +519,9 @@ class _ReaderPageState extends State<ReaderPage>
                 const SizedBox(height: 12),
                 TextField(
                   controller: _searchController,
-                  onChanged: (_) => _render(),
+                  onChanged: (_) {
+                    _render();
+                  },
                   decoration: const InputDecoration(
                     labelText: 'Search stories',
                     prefixIcon: Icon(Icons.search),
@@ -449,6 +554,15 @@ class _ReaderPageState extends State<ReaderPage>
                   ],
                 ),
                 const SizedBox(height: 14),
+                if (_occasion == Occasion.askAi)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _retryAiLayout,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit AI prompt'),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 // The article cards, headings, actions, and occasion-specific
                 // content below are produced by the official A2UI renderer.
@@ -479,4 +593,61 @@ class _ReaderPageState extends State<ReaderPage>
       ),
     );
   }
+}
+
+class _AiPromptDialog extends StatefulWidget {
+  const _AiPromptDialog({required this.initialPrompt});
+
+  final String initialPrompt;
+
+  @override
+  State<_AiPromptDialog> createState() => _AiPromptDialogState();
+}
+
+class _AiPromptDialogState extends State<_AiPromptDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialPrompt);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Ask AI · A2UI layout'),
+    content: SizedBox(
+      width: 520,
+      child: TextField(
+        controller: _controller,
+        autofocus: true,
+        minLines: 3,
+        maxLines: 7,
+        decoration: const InputDecoration(
+          labelText: 'Visual direction',
+          hintText: 'Describe the A2UI look you want',
+          border: OutlineInputBorder(),
+        ),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () {
+          final value = _controller.text.trim();
+          if (value.isNotEmpty) Navigator.pop(context, value);
+        },
+        child: const Text('Generate A2UI'),
+      ),
+    ],
+  );
 }

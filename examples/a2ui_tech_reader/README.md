@@ -14,6 +14,17 @@ flutter test
 flutter analyze
 ```
 
+For Android Studio, select the **A2UI Tech Reader (Ask AI)** run configuration and replace `PASTE_YOUR_GEMINI_API_KEY_HERE` in its Additional run args with your key. The configuration is stored in the ignored `.idea/runConfigurations` folder, so your key stays out of Git.
+
+To enable **Ask AI** from a terminal, provide a Gemini API key:
+
+```powershell
+$env:GEMINI_API_KEY = 'your-key'
+flutter run -d windows
+```
+
+You can also use `--dart-define=GEMINI_API_KEY=...` (required for web). Without a key, Ask AI remains visible but disabled. Selecting Ask AI opens a prompt editor prefilled with **Holidays at Sea**; the request starts only after **Generate A2UI**. **Edit AI prompt** opens the editor again. Gemini chooses a coordinated presentation for the page shell and A2UI feed: palette, thematic UI headings, grid or feature layout, card typography, images, and buttons. The app keeps the feed content, filtering, article order, and original links. On HTTP 503, the reader retries once, then uses the chat example's Flash-Lite fallback. A timeout also switches to Flash-Lite. If both models fail, the original feed stays visible alongside the error. A key supplied to a browser build is exposed to that browser; use a server-side proxy for a public deployment.
+
 Windows and web platform runners are included in the example.
 
 ## How it works

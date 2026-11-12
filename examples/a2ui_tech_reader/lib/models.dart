@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'ai_layout.dart';
+
 class NewsItem {
   const NewsItem({
     required this.title,
@@ -33,7 +35,7 @@ const feedPresets = <FeedPreset>[
   FeedPreset('Hacker News', 'https://news.ycombinator.com/rss'),
 ];
 
-enum Occasion { auto, everyday, christmas, winter, easter }
+enum Occasion { auto, everyday, christmas, winter, easter, askAi }
 
 extension OccasionInfo on Occasion {
   String get label => switch (this) {
@@ -42,6 +44,7 @@ extension OccasionInfo on Occasion {
     Occasion.christmas => 'Christmas',
     Occasion.winter => 'Winter Games',
     Occasion.easter => 'Easter',
+    Occasion.askAi => 'Ask AI',
   };
 
   IconData get icon => switch (this) {
@@ -50,6 +53,7 @@ extension OccasionInfo on Occasion {
     Occasion.christmas => Icons.celebration_outlined,
     Occasion.winter => Icons.ac_unit,
     Occasion.easter => Icons.local_florist_outlined,
+    Occasion.askAi => Icons.auto_awesome,
   };
 }
 
@@ -106,7 +110,38 @@ class PortalStyle {
   final String heroLabel;
 }
 
+PortalStyle styleForAi(AiLayout layout) => PortalStyle(
+  accent: _hexColor(layout.accentColor),
+  background: _hexColor(layout.pageColor),
+  surface: _hexColor(layout.surfaceColor),
+  ink: _inkForBackground(layout.pageColor),
+  headline: layout.headline,
+  kicker: layout.kicker,
+  heroLabel: layout.bannerEyebrow,
+);
+
+Color _hexColor(String value) =>
+    Color(int.parse('FF${value.substring(1)}', radix: 16));
+
+Color _inkForBackground(String hex) {
+  final red = int.parse(hex.substring(1, 3), radix: 16);
+  final green = int.parse(hex.substring(3, 5), radix: 16);
+  final blue = int.parse(hex.substring(5, 7), radix: 16);
+  return (red * 299 + green * 587 + blue * 114) / 1000 >= 145
+      ? const Color(0xFF21203C)
+      : Colors.white;
+}
+
 PortalStyle styleFor(Occasion occasion) => switch (occasion) {
+  Occasion.askAi => const PortalStyle(
+    accent: Color(0xFF6B4BC3),
+    background: Color(0xFFF6F3FC),
+    surface: Colors.white,
+    ink: Color(0xFF21203C),
+    headline: 'Ask AI layout',
+    kicker: 'TECH / ASK AI EDITION',
+    heroLabel: 'AI CURATED · ORIGINAL STORIES',
+  ),
   Occasion.christmas => const PortalStyle(
     accent: Color(0xFFAB3439),
     background: Color(0xFFF8F5EF),
