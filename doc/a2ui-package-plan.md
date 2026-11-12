@@ -1,6 +1,6 @@
 # A2UI package redesign plan
 
-Status: historical design plan. The repository-root 0.2.0-dev.1 package now
+Status: historical design plan. The repository-root 0.2.x package now
 implements the A2UI v1.0 API; consult the root README and source for current
 behavior. Some design targets below remain future work, including durable
 appearance storage in the example. The 0.1.x implementation is available in

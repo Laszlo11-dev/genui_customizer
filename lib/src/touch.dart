@@ -193,8 +193,9 @@ final class GenUiTouchController extends ChangeNotifier {
   Iterable<TouchContract> get contracts => _contracts.values;
 
   void attachProcessor(MessageProcessor<ComponentImplementation> value) {
-    if (_processor != null)
+    if (_processor != null) {
       throw StateError('A processor is already attached.');
+    }
     _processor = value;
   }
 
@@ -298,8 +299,9 @@ final class GenUiTouchController extends ChangeNotifier {
           for (final value in raw) {
             if (value is! Map ||
                 value['id'] is! String ||
-                value['component'] is! String)
+                value['component'] is! String) {
               continue;
+            }
             final component = value.cast<String, Object?>();
             touched.add('$surfaceId\u0000${component['id']}');
             _applyProfile(surfaceId, component);
@@ -447,8 +449,9 @@ final class GenUiTouchController extends ChangeNotifier {
     final propose = composer;
     if (selected == null || propose == null) return;
     final rule = contractFor(selected)?.properties[property];
-    if (rule == null)
+    if (rule == null) {
       throw FormatException('Property $property is not editable.');
+    }
     final started = _revision;
     final value = await propose(selected, rule, instruction);
     if (_revision != started || _selection != selected) {

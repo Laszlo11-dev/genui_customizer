@@ -16,19 +16,18 @@ Future<void> showGenUiTouchStudio({
   TouchStudioBoundsPersistence? boundsPersistence =
       const SharedPreferencesTouchStudioBoundsPersistence(),
 }) async {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final themes = InheritedTheme.capture(from: context, to: navigator.context);
   Rect? stored;
   try {
     stored = await boundsPersistence?.load();
   } on Object {
     // Local layout storage is optional.
   }
-  if (!context.mounted) return;
-  await Navigator.of(context, rootNavigator: true).push<void>(
+  if (!context.mounted || !navigator.mounted) return;
+  await navigator.push<void>(
     _TouchStudioRoute(
-      themes: InheritedTheme.capture(
-        from: context,
-        to: Navigator.of(context, rootNavigator: true).context,
-      ),
+      themes: themes,
       builder: (_) => _FloatingWindow(
         controller: controller,
         surfaceId: surfaceId,

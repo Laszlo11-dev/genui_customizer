@@ -2,7 +2,7 @@
 
 **Make generated UI your own.** GenUI Touch adds runtime appearance editing to A2UI Flutter surfaces. A user can select a rendered component, change properties approved by the host app, and see the result immediately. Manual editing does not require an AI service.
 
-> **Breaking change in 0.2.0-dev.1:** GenUI Touch has been rewritten for **A2UI v1.0**, `a2ui_core` 0.7.x, and `a2ui_flutter` 0.3.x. The 0.1.x `genui` API has been removed. Existing 0.1.x integrations must be updated; this release is not source compatible, and it does not automatically migrate saved 0.1.x snapshots or appearance profiles.
+> **Breaking change in 0.2.1:** GenUI Touch has been rewritten for **A2UI v1.0**, `a2ui_core` 0.7.x, and `a2ui_flutter` 0.3.x. The 0.1.x `genui` API has been removed. Existing 0.1.x integrations must be updated; 0.2.1 is not source compatible and does not automatically migrate saved 0.1.x snapshots or appearance profiles.
 
 **[Try the A2UI chat example in your browser](https://laszlo11-dev.github.io/genui_customizer/).** It uses a fixed offline reply, so no account or API key is needed.
 

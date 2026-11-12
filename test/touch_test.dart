@@ -24,7 +24,7 @@ void main() {
   ) async {
     final touch = GenUiTouchController(
       contracts: [textContract],
-      roleFor: (_, __) => 'sample-text',
+      roleFor: (_, _) => 'sample-text',
     );
     final catalog = touch.decorateCatalog(basicCatalog());
     final processor = MessageProcessor<ComponentImplementation>(

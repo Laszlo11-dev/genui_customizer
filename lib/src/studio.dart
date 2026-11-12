@@ -136,8 +136,9 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
     final surface = widget.controller.processor.model.getSurface(
       widget.surfaceId,
     );
-    if (surface == null)
+    if (surface == null) {
       return const Center(child: Text('Surface unavailable'));
+    }
     final selected = widget.controller.selection;
     final contract = selected?.surfaceId == widget.surfaceId
         ? widget.controller.contractFor(selected!)
@@ -214,8 +215,9 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
     final contracts = widget.controller.contracts.toList();
     final current =
         galleryContract ?? (contracts.isEmpty ? null : contracts.first);
-    if (current == null)
+    if (current == null) {
       return const Center(child: Text('No editable components'));
+    }
     final key = '${current.catalogId}\u0000${current.componentType}';
     final defaults =
         widget.controller.profile.defaults[key] ?? const <String, Object?>{};

@@ -35,8 +35,9 @@ final class SharedPreferencesTouchStudioBoundsPersistence
         !width.isFinite ||
         !height.isFinite ||
         width <= 0 ||
-        height <= 0)
+        height <= 0) {
       return null;
+    }
     return Rect.fromLTWH(
       left.toDouble(),
       top.toDouble(),

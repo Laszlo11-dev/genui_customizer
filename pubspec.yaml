@@ -1,6 +1,6 @@
 name: genui_customizer
 description: GenUI Touch lets users customize A2UI Flutter surfaces at runtime and save appearance preferences.
-version: 0.2.0-dev.1
+version: 0.2.1
 homepage: https://github.com/Laszlo11-dev/genui_customizer
 repository: https://github.com/Laszlo11-dev/genui_customizer
 issue_tracker: https://github.com/Laszlo11-dev/genui_customizer/issues

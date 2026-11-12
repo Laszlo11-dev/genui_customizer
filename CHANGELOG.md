@@ -1,3 +1,9 @@
+## 0.2.1
+
+- Release the A2UI v1.0 rewrite as a stable package. This is a breaking change from the 0.1.x `genui` API.
+- Enable Flutter lint rules for the package and fix the issues reported by pub.dev static analysis.
+- Keep the existing PolyForm Perimeter license.
+
 ## 0.2.0-dev.1
 
 - Rebuild GenUI Touch for A2UI v1.0 with `a2ui_core` 0.7.x and `a2ui_flutter` 0.3.x.
