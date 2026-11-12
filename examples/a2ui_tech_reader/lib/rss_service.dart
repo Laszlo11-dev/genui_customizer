@@ -9,14 +9,17 @@ class RssService {
 
   Future<List<NewsItem>> load(String input) async {
     final url = Uri.tryParse(input.trim());
-    if (url == null || (url.scheme != 'http' && url.scheme != 'https') || url.host.isEmpty) {
+    if (url == null ||
+        (url.scheme != 'http' && url.scheme != 'https') ||
+        url.host.isEmpty) {
       throw const FormatException('Use a valid HTTP(S) RSS or Atom URL.');
     }
     final response = await _client
         .get(
           url,
           headers: {
-            'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+            'Accept':
+                'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
           },
         )
         .timeout(const Duration(seconds: 15));
@@ -51,7 +54,9 @@ class RssService {
         }
       }
       final uri = Uri.tryParse(link);
-      if (title.isEmpty || uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
+      if (title.isEmpty ||
+          uri == null ||
+          (uri.scheme != 'https' && uri.scheme != 'http')) {
         continue;
       }
       final description = childText('description').isNotEmpty
@@ -73,15 +78,28 @@ class RssService {
           if (candidate != null &&
               Uri.tryParse(candidate)?.scheme == 'https' &&
               (e.name.local != 'enclosure' ||
-                  mediaType == null || mediaType.startsWith('image/'))) {
+                  mediaType == null ||
+                  mediaType.startsWith('image/'))) {
             image = candidate;
             break;
           }
         }
       }
-      final published = _parseDate(childText('published')) ??
+      final published =
+          _parseDate(childText('published')) ??
           _parseDate(childText('updated')) ??
           _parseDate(childText('pubDate'));
+      final categories = <String>{};
+      for (final element in node.children.whereType<XmlElement>()) {
+        if (element.name.local != 'category') continue;
+        // RSS uses element text; Atom uses the term (or label) attribute.
+        final category =
+            (element.getAttribute('term') ??
+                    element.getAttribute('label') ??
+                    element.innerText)
+                .trim();
+        if (category.isNotEmpty) categories.add(category);
+      }
       items.add(
         NewsItem(
           title: title,
@@ -90,6 +108,7 @@ class RssService {
           summary: plain.length > 190 ? '${plain.substring(0, 187)}…' : plain,
           published: published,
           imageUrl: image,
+          categories: categories.toList(),
         ),
       );
     }
@@ -105,19 +124,34 @@ class RssService {
       caseSensitive: false,
     ).firstMatch(value.trim());
     if (match == null) return null;
-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
-      'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const months = [
+      'jan',
+      'feb',
+      'mar',
+      'apr',
+      'may',
+      'jun',
+      'jul',
+      'aug',
+      'sep',
+      'oct',
+      'nov',
+      'dec',
+    ];
     final month = months.indexOf(match[2]!.toLowerCase()) + 1;
     if (month == 0) return null;
     final zone = match[7]!.toUpperCase();
     final offsetMinutes = zone.startsWith('+') || zone.startsWith('-')
         ? (zone.startsWith('-') ? -1 : 1) *
-            (int.parse(zone.substring(1, 3)) * 60 +
-                int.parse(zone.substring(3, 5)))
+              (int.parse(zone.substring(1, 3)) * 60 +
+                  int.parse(zone.substring(3, 5)))
         : 0;
     return DateTime.utc(
-      int.parse(match[3]!), month, int.parse(match[1]!),
-      int.parse(match[4]!), int.parse(match[5]!),
+      int.parse(match[3]!),
+      month,
+      int.parse(match[1]!),
+      int.parse(match[4]!),
+      int.parse(match[5]!),
       int.parse(match[6] ?? '0'),
     ).subtract(Duration(minutes: offsetMinutes));
   }

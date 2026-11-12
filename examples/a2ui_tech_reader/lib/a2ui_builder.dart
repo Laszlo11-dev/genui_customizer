@@ -1,8 +1,9 @@
 import 'package:a2ui_core/a2ui_core.dart';
 
 import 'models.dart';
+import 'news_gallery.dart';
 
-/// Builds the news stream as A2UI data. The Flutter shell owns only controls.
+/// Produces the news stream as A2UI data, including its occasion styling.
 class NewsA2uiBuilder {
   static const surfaceId = 'news';
 
@@ -15,128 +16,160 @@ class NewsA2uiBuilder {
   }) {
     final nodes = <Map<String, Object?>>[];
     final children = <String>[];
+    final edition = occasion == Occasion.auto ? Occasion.everyday : occasion;
+    final palette = _palettes[edition]!;
 
-    void text(String id, String value, [String? variant]) => nodes.add({
-      'id': id,
-      'component': 'Text',
-      'text': variant != null && variant.startsWith('h')
-          ? '${List.filled(int.parse(variant.substring(1)), '#').join()} $value'
-          : value,
-      'variant': ?(variant == 'caption' ? variant : null),
-    });
-    void column(String id, List<String> items) =>
-        nodes.add({'id': id, 'component': 'Column', 'children': items});
-    void row(String id, List<String> items) =>
-        nodes.add({'id': id, 'component': 'Row', 'children': items});
-    void section(String id, String label) {
-      text(id, label, 'h3');
+    void section(
+      String id,
+      String title, {
+      String? eyebrow,
+      bool banner = false,
+    }) {
+      nodes.add({
+        'id': id,
+        'component': 'NewsSection',
+        'catalogId': newsGalleryCatalogId,
+        'title': title,
+        'eyebrow': ?eyebrow,
+        'backgroundColor': banner ? palette.banner : palette.card,
+        'textColor': banner ? palette.bannerInk : palette.ink,
+        'accentColor': banner ? palette.bannerAccent : palette.accent,
+        'titleSize': banner ? 31 : 25,
+        'padding': banner ? 22 : 0,
+        'cornerRadius': banner ? 20 : 0,
+        'showRule': banner,
+      });
       children.add(id);
     }
 
-    String card(int index, {bool feature = false, bool short = false}) {
+    String story(int index, {String variant = 'standard', bool short = false}) {
       final article = articles[index];
       final id = 'story_$index';
-      final parts = <String>[];
-      if (article.imageUrl != null) {
-        nodes.add({
-          'id': '${id}_image',
-          'component': 'Image',
-          'url': article.imageUrl,
-          'description': article.title,
-          'variant': feature ? 'header' : 'smallFeature',
-        });
-        parts.add('${id}_image');
-      }
-      text('${id}_source', article.source.toUpperCase(), 'caption');
-      text('${id}_title', article.title, feature ? 'h2' : 'h4');
-      parts.addAll(['${id}_source', '${id}_title']);
-      if (!short && article.summary.isNotEmpty) {
-        text('${id}_summary', article.summary);
-        parts.add('${id}_summary');
-      }
-      if (article.published != null) {
-        final date = article.published!.toLocal();
-        text(
-          '${id}_date',
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-          'caption',
-        );
-        parts.add('${id}_date');
-      }
-      text('${id}_open_label', 'Read original ↗');
+      final feature = variant == 'feature';
+      final wire = variant == 'wire';
+      final date = article.published?.toLocal();
       nodes.add({
-        'id': '${id}_open',
-        'component': 'Button',
-        'child': '${id}_open_label',
-        'action': {
+        'id': id,
+        'component': 'NewsStory',
+        'catalogId': newsGalleryCatalogId,
+        'title': article.title,
+        'source': article.source,
+        if (article.summary.isNotEmpty) 'summary': article.summary,
+        if (article.imageUrl != null) 'imageUrl': article.imageUrl,
+        if (date != null)
+          'date':
+              '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+        'openLabel': 'Read original ↗',
+        'open': {
           'event': {'name': 'open_$index'},
         },
+        'backgroundColor': feature ? palette.feature : palette.card,
+        'textColor': palette.ink,
+        'mutedColor': palette.muted,
+        'accentColor': palette.accent,
+        'borderColor': palette.border,
+        'cornerRadius': feature ? 24 : palette.radius,
+        'padding': feature ? 22 : 16,
+        'imageHeight': feature ? 250 : (wire ? 96 : 150),
+        'imagePosition': wire ? 'left' : 'top',
+        'imageFit': 'cover',
+        'titleSize': feature ? 30 : (wire ? 19 : 22),
+        'titleWeight': feature ? 'bold' : 'medium',
+        'summarySize': 14,
+        'showSummary': !short,
+        'showDate': true,
+        'buttonStyle': feature ? 'filled' : (wire ? 'text' : 'outline'),
+        'elevation': feature ? 2 : 0,
       });
-      parts.add('${id}_open');
-      column('${id}_content', parts);
-      nodes.add({'id': id, 'component': 'Card', 'child': '${id}_content'});
       return id;
     }
 
-    void grid(String id, List<int> indices, int columns, {bool short = false}) {
-      for (var start = 0; start < indices.length; start += columns) {
-        final cards = [
-          for (final index in indices.skip(start).take(columns))
-            card(index, short: short),
-        ];
-        if (cards.length == 1 || compact) {
-          children.addAll(cards);
-        } else {
-          final rowId = '${id}_row_$start';
-          row(rowId, cards);
-          children.add(rowId);
-        }
-      }
+    void grid(
+      String id,
+      List<int> indices,
+      int columns, {
+      bool short = false,
+      String variant = 'standard',
+    }) {
+      if (indices.isEmpty) return;
+      nodes.add({
+        'id': id,
+        'component': 'NewsGrid',
+        'catalogId': newsGalleryCatalogId,
+        'children': [
+          for (final index in indices)
+            story(index, variant: variant, short: short),
+        ],
+        'columns': compact ? 1 : columns,
+        'gap': edition == Occasion.winter ? 12 : 18,
+      });
+      children.add(id);
+    }
+
+    void status(String title, String detail) {
+      section('status_title', title, banner: true);
+      nodes.add({'id': 'status_detail', 'component': 'Text', 'text': detail});
+      children.add('status_detail');
     }
 
     final all = List<int>.generate(
       articles.length > 24 ? 24 : articles.length,
       (i) => i,
     );
-    final edition = occasion == Occasion.auto ? Occasion.everyday : occasion;
     if (loading) {
-      section('loading_title', 'Loading stories…');
-      text('loading_detail', 'Fetching the selected RSS / Atom feed.');
-      children.add('loading_detail');
+      status('Loading stories…', 'Fetching the selected RSS / Atom feed.');
     } else if (error != null) {
-      section('error_title', 'Feed unavailable');
-      text('error_detail', error);
-      children.add('error_detail');
+      status('Feed unavailable', error);
     } else if (all.isEmpty) {
-      section('empty_title', 'No stories found');
-      text('empty_detail', 'Choose another RSS source or refresh this feed.');
-      children.add('empty_detail');
+      status(
+        'No stories found',
+        'Choose another RSS source or refresh this feed.',
+      );
     } else {
       switch (edition) {
         case Occasion.everyday:
-          section('lead', 'THE DAILY EDIT · ${all.length} STORIES');
-          children.add(card(0, feature: true));
+          section(
+            'lead',
+            'THE DAILY EDIT · ${all.length} STORIES',
+            eyebrow: 'Today in technology',
+            banner: true,
+          );
+          children.add(story(0, variant: 'feature'));
           section('latest', 'Latest in technology');
           grid('daily', all.skip(1).toList(), 3);
         case Occasion.christmas:
-          section('lead', '✦ THE HOLIDAY EDIT');
+          section(
+            'lead',
+            'THE HOLIDAY EDIT',
+            eyebrow: '✦ Tech / festive edition',
+            banner: true,
+          );
           final gifts = all
               .where((i) => _matches(articles[i], _giftTerms))
               .toList();
           if (gifts.isNotEmpty) {
-            section('gifts', 'Gift ideas from this feed');
-            grid('gifts', gifts, 2);
+            section(
+              'gifts',
+              'Gift ideas from this feed',
+              eyebrow: 'Selected stories',
+            );
+            grid('gifts_grid', gifts, 2, variant: 'feature');
           }
           section('holiday_latest', 'More from the feed');
           grid('holiday', all.where((i) => !gifts.contains(i)).toList(), 2);
         case Occasion.winter:
-          section('lead', '❄ WINTER GAMES / TECH WATCH');
+          section(
+            'lead',
+            'WINTER GAMES / TECH WATCH',
+            eyebrow: '❄ Technology in motion',
+            banner: true,
+          );
           final sports = all
               .where((i) => _matches(articles[i], _winterTerms))
               .toList();
           if (sports.isNotEmpty) {
             section('winter_sport', 'Winter sport technology');
-            grid('sport', sports, 3, short: true);
+            grid('sport', sports, 2);
           }
           section('winter_latest', 'The news wire');
           grid(
@@ -144,15 +177,21 @@ class NewsA2uiBuilder {
             all.where((i) => !sports.contains(i)).toList(),
             1,
             short: true,
+            variant: 'wire',
           );
         case Occasion.easter:
-          section('lead', '✿ FRESH IDEAS / SPRING EDIT');
+          section(
+            'lead',
+            'FRESH IDEAS / SPRING EDIT',
+            eyebrow: '✿ New season',
+            banner: true,
+          );
           final spring = all
               .where((i) => _matches(articles[i], _springTerms))
               .toList();
           if (spring.isNotEmpty) {
-            section('spring', 'Spring discoveries');
-            grid('spring_cards', spring, 2);
+            section('spring', 'Spring discoveries', eyebrow: 'From this feed');
+            grid('spring_cards', spring, 2, variant: 'feature');
           }
           section('spring_latest', 'Elsewhere in technology');
           grid(
@@ -216,3 +255,79 @@ class NewsA2uiBuilder {
     'outdoor',
   ];
 }
+
+class _Palette {
+  const _Palette(
+    this.accent,
+    this.ink,
+    this.muted,
+    this.card,
+    this.feature,
+    this.border,
+    this.banner,
+    this.bannerInk,
+    this.bannerAccent,
+    this.radius,
+  );
+  final String accent,
+      ink,
+      muted,
+      card,
+      feature,
+      border,
+      banner,
+      bannerInk,
+      bannerAccent;
+  final int radius;
+}
+
+const _palettes = <Occasion, _Palette>{
+  Occasion.everyday: _Palette(
+    '#3957D7',
+    '#192336',
+    '#536079',
+    '#FFFFFF',
+    '#FFFFFF',
+    '#E1E5EF',
+    '#E7ECFF',
+    '#192336',
+    '#3957D7',
+    18,
+  ),
+  Occasion.christmas: _Palette(
+    '#AB3439',
+    '#153C35',
+    '#526B62',
+    '#FFFFFF',
+    '#FFF8F0',
+    '#E8D6CE',
+    '#153C35',
+    '#FFFFFF',
+    '#E8C783',
+    20,
+  ),
+  Occasion.winter: _Palette(
+    '#1768A0',
+    '#122C42',
+    '#536C7C',
+    '#FFFFFF',
+    '#EAF5FB',
+    '#C7DFEA',
+    '#123B59',
+    '#FFFFFF',
+    '#9DDBF5',
+    10,
+  ),
+  Occasion.easter: _Palette(
+    '#6B779D',
+    '#343455',
+    '#6B687B',
+    '#FFFFFF',
+    '#F6F0FA',
+    '#E5DBEB',
+    '#E6DDF2',
+    '#343455',
+    '#75629A',
+    28,
+  ),
+};

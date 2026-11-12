@@ -8,6 +8,7 @@ class NewsItem {
     this.summary = '',
     this.published,
     this.imageUrl,
+    this.categories = const [],
   });
 
   final String title;
@@ -16,6 +17,7 @@ class NewsItem {
   final String summary;
   final DateTime? published;
   final String? imageUrl;
+  final List<String> categories;
 }
 
 class FeedPreset {
@@ -35,20 +37,20 @@ enum Occasion { auto, everyday, christmas, winter, easter }
 
 extension OccasionInfo on Occasion {
   String get label => switch (this) {
-        Occasion.auto => 'Automatikus',
-        Occasion.everyday => 'Everyday',
-        Occasion.christmas => 'Christmas',
-        Occasion.winter => 'Winter Games',
-        Occasion.easter => 'Easter',
-      };
+    Occasion.auto => 'Automatikus',
+    Occasion.everyday => 'Everyday',
+    Occasion.christmas => 'Christmas',
+    Occasion.winter => 'Winter Games',
+    Occasion.easter => 'Easter',
+  };
 
   IconData get icon => switch (this) {
-        Occasion.auto => Icons.auto_awesome_outlined,
-        Occasion.everyday => Icons.public,
-        Occasion.christmas => Icons.celebration_outlined,
-        Occasion.winter => Icons.ac_unit,
-        Occasion.easter => Icons.local_florist_outlined,
-      };
+    Occasion.auto => Icons.auto_awesome_outlined,
+    Occasion.everyday => Icons.public,
+    Occasion.christmas => Icons.celebration_outlined,
+    Occasion.winter => Icons.ac_unit,
+    Occasion.easter => Icons.local_florist_outlined,
+  };
 }
 
 // Gregorian computus; Easter Sunday falls in March or April.
@@ -74,7 +76,11 @@ Occasion resolvedOccasion(Occasion selected, DateTime now) {
   if (selected != Occasion.auto) return selected;
   if (now.month == 12 && now.day >= 1) return Occasion.christmas;
   final easter = easterSunday(now.year);
-  final delta = DateTime(now.year, now.month, now.day).difference(easter).inDays;
+  final delta = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).difference(easter).inDays;
   if (delta >= -7 && delta <= 1) return Occasion.easter;
   // 'Winter Games' is a manually selectable showcase edition. We don't
   // assume an Olympics is taking place every winter.
@@ -101,40 +107,40 @@ class PortalStyle {
 }
 
 PortalStyle styleFor(Occasion occasion) => switch (occasion) {
-      Occasion.christmas => const PortalStyle(
-          accent: Color(0xFFAB3439),
-          background: Color(0xFFF8F5EF),
-          surface: Colors.white,
-          ink: Color(0xFF153C35),
-          headline: 'The holiday edit',
-          kicker: 'TECH / FESTIVE EDITION',
-          heroLabel: 'GIFT-WORTHY IDEAS · WINTER TECH',
-        ),
-      Occasion.winter => const PortalStyle(
-          accent: Color(0xFF1768A0),
-          background: Color(0xFFEDF6FB),
-          surface: Colors.white,
-          ink: Color(0xFF122C42),
-          headline: 'Technology in motion',
-          kicker: 'TECH / WINTER GAMES EDITION',
-          heroLabel: 'WINTER GAMES · INNOVATION',
-        ),
-      Occasion.easter => const PortalStyle(
-          accent: Color(0xFF6B779D),
-          background: Color(0xFFFAF6FB),
-          surface: Colors.white,
-          ink: Color(0xFF343455),
-          headline: 'Fresh ideas, new season',
-          kicker: 'TECH / SPRING EDITION',
-          heroLabel: 'SPRING · FRESH FINDS',
-        ),
-      _ => const PortalStyle(
-          accent: Color(0xFF3957D7),
-          background: Color(0xFFF3F5F9),
-          surface: Colors.white,
-          ink: Color(0xFF192336),
-          headline: 'The future, in focus.',
-          kicker: 'TECH / DAILY EDITION',
-          heroLabel: 'TODAY IN TECHNOLOGY',
-        ),
-    };
+  Occasion.christmas => const PortalStyle(
+    accent: Color(0xFFAB3439),
+    background: Color(0xFFF8F5EF),
+    surface: Colors.white,
+    ink: Color(0xFF153C35),
+    headline: 'The holiday edit',
+    kicker: 'TECH / FESTIVE EDITION',
+    heroLabel: 'GIFT-WORTHY IDEAS · WINTER TECH',
+  ),
+  Occasion.winter => const PortalStyle(
+    accent: Color(0xFF1768A0),
+    background: Color(0xFFEDF6FB),
+    surface: Colors.white,
+    ink: Color(0xFF122C42),
+    headline: 'Technology in motion',
+    kicker: 'TECH / WINTER GAMES EDITION',
+    heroLabel: 'WINTER GAMES · INNOVATION',
+  ),
+  Occasion.easter => const PortalStyle(
+    accent: Color(0xFF6B779D),
+    background: Color(0xFFFAF6FB),
+    surface: Colors.white,
+    ink: Color(0xFF343455),
+    headline: 'Fresh ideas, new season',
+    kicker: 'TECH / SPRING EDITION',
+    heroLabel: 'SPRING · FRESH FINDS',
+  ),
+  _ => const PortalStyle(
+    accent: Color(0xFF3957D7),
+    background: Color(0xFFF3F5F9),
+    surface: Colors.white,
+    ink: Color(0xFF192336),
+    headline: 'The future, in focus.',
+    kicker: 'TECH / DAILY EDITION',
+    heroLabel: 'TODAY IN TECHNOLOGY',
+  ),
+};

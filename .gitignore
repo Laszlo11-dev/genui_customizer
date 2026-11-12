@@ -21,9 +21,12 @@ pubspec_overrides.yaml
 *.iml
 **/android/local.properties
 **/android/key.properties
+**/android/.gradle/
 **/android/**/gradlew
 **/android/**/gradlew.bat
 **/android/**/gradle-wrapper.jar
+**/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+**/windows/flutter/ephemeral/
 **/windows/flutter/generated_plugin_registrant.cc
 **/windows/flutter/generated_plugin_registrant.h
 **/windows/flutter/generated_plugins.cmake

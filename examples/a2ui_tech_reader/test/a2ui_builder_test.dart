@@ -19,8 +19,8 @@ void main() {
     expect(messages.last.containsKey('updateComponents'), true);
     final updated = messages.last['updateComponents']! as Map<String, Object?>;
     final components = updated['components']! as List<Map<String, Object?>>;
-    expect(components.any((c) => c['component'] == 'Card'), true);
-    expect(components.any((c) => c['component'] == 'Button'), true);
+    expect(components.any((c) => c['component'] == 'NewsStory'), true);
+    expect(components.any((c) => c['component'] == 'NewsGrid'), true);
   });
 
   test('all four editions generate distinct A2UI trees', () {
@@ -36,6 +36,30 @@ void main() {
     expect(trees.toSet().length, 4);
   });
 
+  test('occasion changes gallery presentation properties', () {
+    Map<String, Object?> lead(Occasion occasion) {
+      final update =
+          NewsA2uiBuilder.build(items, occasion).last['updateComponents']
+              as Map<String, Object?>;
+      final nodes = update['components'] as List<Map<String, Object?>>;
+      return nodes.firstWhere((node) => node['id'] == 'lead');
+    }
+
+    expect(lead(Occasion.christmas)['backgroundColor'], '#153C35');
+    expect(lead(Occasion.winter)['backgroundColor'], '#123B59');
+    expect(lead(Occasion.easter)['accentColor'], '#75629A');
+    final update =
+        NewsA2uiBuilder.build(items, Occasion.winter).last['updateComponents']
+            as Map<String, Object?>;
+    final nodes = update['components'] as List<Map<String, Object?>>;
+    expect(
+      nodes
+          .where((node) => node['component'] == 'NewsStory')
+          .every((node) => node['buttonStyle'] == 'text'),
+      true,
+    );
+  });
+
   test('feed metadata and actions stay in the A2UI tree', () {
     final article = NewsItem(
       title: 'A new laptop',
@@ -48,10 +72,20 @@ void main() {
     final messages = NewsA2uiBuilder.build([article], Occasion.christmas);
     final update = messages.last['updateComponents'] as Map<String, Object?>;
     final nodes = update['components'] as List<Map<String, Object?>>;
-    expect(nodes.any((n) => n['component'] == 'Image'), true);
-    expect(nodes.any((n) => n['text'] == '2026-01-02'), true);
-    expect(nodes.any((n) => n['action'] != null), true);
-    expect(nodes.any((n) => (n['text'] as String?)?.contains('Gift ideas from this feed') == true), true);
+    expect(
+      nodes.any((n) => n['imageUrl'] == 'https://example.com/photo.jpg'),
+      true,
+    );
+    expect(nodes.any((n) => n['date'] == '2026-01-02'), true);
+    expect(nodes.any((n) => n['open'] != null), true);
+    expect(
+      nodes.any(
+        (n) =>
+            (n['title'] as String?)?.contains('Gift ideas from this feed') ==
+            true,
+      ),
+      true,
+    );
   });
 
   test('loading, error and empty states are A2UI components', () {

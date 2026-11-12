@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'a2ui_builder.dart';
 import 'models.dart';
+import 'news_gallery.dart';
+import 'news_filter.dart';
 import 'rss_service.dart';
 
 void main() => runApp(const TechReaderApp());
@@ -29,7 +31,8 @@ class ReaderPage extends StatefulWidget {
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends State<ReaderPage> {
+class _ReaderPageState extends State<ReaderPage>
+    with SingleTickerProviderStateMixin {
   final _rss = RssService();
   final _sourceController = TextEditingController(text: feedPresets.first.url);
   final _searchController = TextEditingController();
@@ -43,13 +46,33 @@ class _ReaderPageState extends State<ReaderPage> {
   String? _error;
   bool _loading = false;
   bool _compact = false;
+  bool _hidePolitical = true;
   int _requestId = 0;
+  int _occasionChangeId = 0;
+  late final AnimationController _feedTransition;
+  late final Animation<double> _feedOpacity;
+  late final Animation<Offset> _feedOffset;
 
   Occasion get _active => resolvedOccasion(_occasion, DateTime.now());
 
   @override
   void initState() {
     super.initState();
+    _feedTransition = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+      reverseDuration: const Duration(milliseconds: 170),
+      value: 1,
+    );
+    _feedOpacity = _feedTransition.drive(
+      CurveTween(curve: Curves.easeOutCubic),
+    );
+    _feedOffset = _feedTransition.drive(
+      Tween<Offset>(
+        begin: const Offset(0, 0.025),
+        end: Offset.zero,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+    );
     _processor = _newProcessor();
     // Show a real A2UI surface immediately, even before network responds.
     _render();
@@ -67,8 +90,10 @@ class _ReaderPageState extends State<ReaderPage> {
   }
 
   MessageProcessor<ComponentImplementation> _newProcessor() {
+    // Keep actions tied to the article list that produced this surface.
+    final articles = _renderedArticles;
     final processor = MessageProcessor<ComponentImplementation>(
-      catalogs: [basicCatalog()],
+      catalogs: [basicCatalog(), newsGalleryCatalog],
     );
     processor.model.onSurfaceCreated.subscribe((created) {
       if (!mounted) return;
@@ -78,8 +103,8 @@ class _ReaderPageState extends State<ReaderPage> {
       final match = RegExp(r'^open_(\d+)$').firstMatch(action.name);
       if (match == null) return;
       final index = int.tryParse(match.group(1)!);
-      if (index == null || index >= _renderedArticles.length) return;
-      final url = _renderedArticles[index].link;
+      if (index == null || index >= articles.length) return;
+      final url = articles[index].link;
       if (url.scheme == 'https' || url.scheme == 'http') {
         launchUrl(url, mode: LaunchMode.externalApplication);
       }
@@ -89,16 +114,13 @@ class _ReaderPageState extends State<ReaderPage> {
 
   void _render() {
     final query = _searchController.text.trim().toLowerCase();
-    _renderedArticles = query.isEmpty
-        ? _articles
-        : _articles
-              .where(
-                (article) =>
-                    '${article.title} ${article.summary} ${article.source}'
-                        .toLowerCase()
-                        .contains(query),
-              )
-              .toList();
+    _renderedArticles = _articles.where((article) {
+      if (_hidePolitical && isPoliticalNews(article)) return false;
+      return query.isEmpty ||
+          '${article.title} ${article.summary} ${article.source}'
+              .toLowerCase()
+              .contains(query);
+    }).toList();
     _messages = NewsA2uiBuilder.build(
       _renderedArticles,
       _active,
@@ -154,10 +176,20 @@ class _ReaderPageState extends State<ReaderPage> {
     _refresh();
   }
 
-  void _changeOccasion(Occasion? value) {
-    if (value == null) return;
+  Future<void> _changeOccasion(Occasion? value) async {
+    if (value == null || value == _occasion) return;
+    final previous = _active;
     setState(() => _occasion = value);
-    _render();
+    if (_active == previous) return;
+    final changeId = ++_occasionChangeId;
+    try {
+      await _feedTransition.reverse().orCancel;
+      if (!mounted || changeId != _occasionChangeId) return;
+      _render();
+      await _feedTransition.forward().orCancel;
+    } on TickerCanceled {
+      // A newer occasion selection owns the transition.
+    }
   }
 
   void _showJson() {
@@ -194,6 +226,7 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   void dispose() {
     _requestId++;
+    _feedTransition.dispose();
     _rss.dispose();
     _processor.dispose();
     _sourceController.dispose();
@@ -223,12 +256,14 @@ class _ReaderPageState extends State<ReaderPage> {
           borderRadius: BorderRadius.circular(18),
         ),
       ),
+      appBarTheme: AppBarTheme(backgroundColor: style.background),
     );
-    return Theme(
+    return AnimatedTheme(
       data: theme,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeInOutCubic,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: style.background,
           title: Row(
             children: [
               Icon(Icons.auto_stories_outlined, color: style.accent),
@@ -264,29 +299,56 @@ class _ReaderPageState extends State<ReaderPage> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [
                 const SizedBox(height: 12),
-                Text(
-                  style.kicker,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: style.accent,
-                    letterSpacing: 2,
-                    fontSize: 12,
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 380),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [...previous, ?current],
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  style.headline,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 46,
-                    letterSpacing: -1.8,
-                    color: style.ink,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.08),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Live RSS stories · rendered by A2UI · no Touch',
-                  style: TextStyle(color: style.ink.withValues(alpha: 0.7)),
+                  child: Column(
+                    key: ValueKey(_active),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        style.kicker,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: style.accent,
+                          letterSpacing: 2,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        style.headline,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 46,
+                          letterSpacing: -1.8,
+                          color: style.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Live RSS stories · rendered by A2UI',
+                        style: TextStyle(
+                          color: style.ink.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 26),
                 Wrap(
@@ -337,6 +399,18 @@ class _ReaderPageState extends State<ReaderPage> {
                         onChanged: _changeOccasion,
                       ),
                     ),
+                    Tooltip(
+                      message:
+                          'Uses feed tags and clear title signals. Technology policy stays visible.',
+                      child: FilterChip(
+                        selected: _hidePolitical,
+                        label: const Text('Hide politics & war'),
+                        onSelected: (value) {
+                          setState(() => _hidePolitical = value);
+                          _render();
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -378,13 +452,21 @@ class _ReaderPageState extends State<ReaderPage> {
                 const SizedBox(height: 16),
                 // The article cards, headings, actions, and occasion-specific
                 // content below are produced by the official A2UI renderer.
-                if (_surface != null)
-                  A2uiSurface(key: ObjectKey(_surface), surface: _surface!)
-                else
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Loading A2UI surface…'),
+                FadeTransition(
+                  opacity: _feedOpacity,
+                  child: SlideTransition(
+                    position: _feedOffset,
+                    child: _surface != null
+                        ? A2uiSurface(
+                            key: ObjectKey(_surface),
+                            surface: _surface!,
+                          )
+                        : const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text('Loading A2UI surface…'),
+                          ),
                   ),
+                ),
                 const SizedBox(height: 24),
                 const Text(
                   'Articles belong to their respective publishers. Open the original link to read. No scraping or article republishing.',
