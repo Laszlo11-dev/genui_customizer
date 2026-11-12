@@ -5,6 +5,11 @@ description: Integrate genui_customizer into an existing Flutter GenUI app for r
 
 # Integrate GenUI Touch
 
+This skill applies only to the current 0.1.x `genui` API. Do not use it for the
+planned `a2ui_flutter` package redesign; follow
+[the A2UI package plan](../../doc/a2ui-package-plan.md) until a replacement
+integration skill is written.
+
 Read the host's existing catalog, `SurfaceController`, A2UI message handler, and persistence boundary before editing. Use the package's public import, `package:genui_customizer/genui_customizer.dart`. Keep the host's transport, identity model, and authorization decisions.
 
 ## Connect the catalog and editor

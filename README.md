@@ -26,17 +26,15 @@ Unlike a theme setting, GenUI Touch can edit **individual rendered widgets** as 
 | Customize a specific widget in the current generated UI. | Customize default property values for a widget type. |
 | Select it by triple-click, long-press, or from the component tree. | Select a catalog widget and edit its preview. |
 
-GenUI Touch is a movable, resizable panel inside the running app. Changes are previewed as you make them. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
+The new A2UI implementation lives in [next](next/). Its Studio remains a floating, movable, resizable dialog in the running app. With host-provided storage and stable presentation roles, saved appearance settings can be reapplied to later generated content.
 
 <img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png" alt="Text style selection in a compact GenUI Touch window over the live application" width="400">
 
 The compact GenUI Touch window keeps the property editor and preview visible. Select another widget in the app without closing GenUI Touch; edits to a shared template appear on every instance.
 
-## Example
+## New example
 
-Try the [live Restaurant Finder demo](https://laszlo11-dev.github.io/genui_customizer/) or follow the [example customization walkthrough](example/README.md). It uses recorded agent responses by default, so you can select, edit, save, and restore customizations without configuring an AI service.
-
-The repository also includes [Simple Chat with GenUI Touch](https://github.com/Laszlo11-dev/genui_customizer/tree/main/examples/simple_chat), adapted from Flutter's official GenUI example, with a recorded demo and optional live Gemini chat. Its migration log documents integration decisions and limitations.
+The previous Restaurant Finder and Simple Chat examples have been removed. The [new example](next/example/) adapts the official A2UI Flutter chat app and adds Touch. It can use Gemini, as the upstream app does, or a fixed offline demo reply without a key. The [package and example plan](doc/a2ui-package-plan.md) records the migration decisions.
 
 Optional AI integration can provide scoped property editing or propose new generated surfaces. Human edits and AI generation can be combined, subject to the host application's integration.
 
@@ -46,22 +44,22 @@ Work with complex layouts, adjust individual widgets, or describe a new presenta
 
 ## Integration
 
-1. Register permitted visual properties using `EditableCatalogRegistry`.
-2. Attach `GenUiCustomizer` and decorate catalog items with `decorateEditableCatalogItem`.
-3. Open `showEditableGenUiStudio`; optionally provide `EditableGenUiStorage` and `EditableGenUiComposer`.
-4. Store `GenUiAppearanceProfile` values and apply them to incoming `updateComponents` messages using stable presentation roles.
+1. Register visual properties with `TouchContract` and `TouchProperty`.
+2. Wrap the A2UI catalog with `GenUiTouchController.decorateCatalog`, then attach the host's `MessageProcessor`.
+3. Send incoming v1.0 messages through `processAgentMessages` and display the host's `A2uiSurface`.
+4. Open `showGenUiTouchStudio` from `onStudioRequested`. Provide `TouchStorage` to persist reusable Gallery and role defaults.
 
 Only host-approved properties are editable. Data bindings, actions, and component relationships remain protected. The host controls authorization, storage, and the scope of saved preferences.
 
-See the [installation and integration guide](example/INSTALL_GUIDE.md) for the complete example file map and the changes needed in another host application.
+The repository-root 0.1.x package still targets the discontinued `genui` API. The new package is [next](next/) and is currently a development release; see its README for integration details.
 
-For AI coding agents integrating the package into an existing Flutter GenUI app, use the [genui-customizer-integration Dart Package Skill](skills/genui-customizer-integration/SKILL.md). It covers editable catalogs, selection gestures, local property editing, persistence, and replaying saved appearance after AI regeneration.
+For the current 0.1.x release, the [genui-customizer-integration Dart Package Skill](skills/genui-customizer-integration/SKILL.md) documents the old GenUI integration. It does not describe the planned A2UI API.
 
 For local development, the repository pins Flutter **3.47.9** in `.fvmrc` (`fvm use`).
 
 ## License
 
-GenUI Touch is licensed under the [PolyForm Perimeter License 1.0.1](LICENSE). The adapted Restaurant Finder example retains its upstream notices and license; see [UPSTREAM_LICENSE](example/UPSTREAM_LICENSE).
+GenUI Touch is licensed under the [PolyForm Perimeter License 1.0.1](LICENSE).
 
 ## Project status
 

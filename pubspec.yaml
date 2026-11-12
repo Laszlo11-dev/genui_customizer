@@ -1,10 +1,10 @@
 name: genui_customizer
 description: GenUI Touch lets users customize Flutter GenUI interfaces at runtime and save appearance preferences.
 version: 0.1.1
-homepage: https://laszlo11-dev.github.io/genui_customizer/
+homepage: https://github.com/Laszlo11-dev/genui_customizer
 repository: https://github.com/Laszlo11-dev/genui_customizer
 issue_tracker: https://github.com/Laszlo11-dev/genui_customizer/issues
-documentation: https://github.com/Laszlo11-dev/genui_customizer/blob/main/example/INSTALL_GUIDE.md
+documentation: https://github.com/Laszlo11-dev/genui_customizer/blob/main/doc/a2ui-package-plan.md
 
 funding:
   - https://github.com/sponsors/Laszlo11-dev
