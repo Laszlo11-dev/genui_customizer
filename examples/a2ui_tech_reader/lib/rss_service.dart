@@ -69,16 +69,19 @@ class RssService {
             e.name.local == 'content' ||
             e.name.local == 'enclosure') {
           final candidate = e.getAttribute('url');
-          if (candidate != null && Uri.tryParse(candidate)?.scheme == 'https') {
+          final mediaType = e.getAttribute('type');
+          if (candidate != null &&
+              Uri.tryParse(candidate)?.scheme == 'https' &&
+              (e.name.local != 'enclosure' ||
+                  mediaType == null || mediaType.startsWith('image/'))) {
             image = candidate;
             break;
           }
         }
       }
-      final published =
-          DateTime.tryParse(childText('published')) ??
-          DateTime.tryParse(childText('updated')) ??
-          DateTime.tryParse(childText('pubDate'));
+      final published = _parseDate(childText('published')) ??
+          _parseDate(childText('updated')) ??
+          _parseDate(childText('pubDate'));
       items.add(
         NewsItem(
           title: title,
@@ -91,6 +94,32 @@ class RssService {
       );
     }
     return items.take(30).toList();
+  }
+
+  static DateTime? _parseDate(String value) {
+    final iso = DateTime.tryParse(value);
+    if (iso != null) return iso;
+    // RSS 2.0 normally uses RFC 822 dates, unlike Atom's ISO 8601 dates.
+    final match = RegExp(
+      r'^(?:[A-Za-z]{3},?\s+)?(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?\s+(GMT|UT|UTC|[+-]\d{4})$',
+      caseSensitive: false,
+    ).firstMatch(value.trim());
+    if (match == null) return null;
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+      'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    final month = months.indexOf(match[2]!.toLowerCase()) + 1;
+    if (month == 0) return null;
+    final zone = match[7]!.toUpperCase();
+    final offsetMinutes = zone.startsWith('+') || zone.startsWith('-')
+        ? (zone.startsWith('-') ? -1 : 1) *
+            (int.parse(zone.substring(1, 3)) * 60 +
+                int.parse(zone.substring(3, 5)))
+        : 0;
+    return DateTime.utc(
+      int.parse(match[3]!), month, int.parse(match[1]!),
+      int.parse(match[4]!), int.parse(match[5]!),
+      int.parse(match[6] ?? '0'),
+    ).subtract(Duration(minutes: offsetMinutes));
   }
 
   void dispose() => _client.close();

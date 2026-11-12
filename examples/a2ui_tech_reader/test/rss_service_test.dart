@@ -11,6 +11,17 @@ void main() {
     expect(result.single.link.toString(), 'https://example.org/a');
   });
 
+  test('parses RSS dates and omits audio enclosures', () {
+    const rss = '''<rss><channel><item><title>Hardware</title>
+      <link>https://example.org/a</link>
+      <pubDate>Tue, 10 Jun 2025 12:30:00 +0200</pubDate>
+      <enclosure url="https://example.org/audio.mp3" type="audio/mpeg"/>
+      </item></channel></rss>''';
+    final article = RssService.parse(rss, source: 'Example').single;
+    expect(article.published, DateTime.utc(2025, 6, 10, 10, 30));
+    expect(article.imageUrl, isNull);
+  });
+
   test('parses Atom links', () {
     const xml = '''<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Atom article</title><link href="https://example.org/b" rel="alternate"/><summary>News</summary></entry></feed>''';
     final result = RssService.parse(xml, source: 'Atom');
