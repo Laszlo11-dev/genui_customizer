@@ -1,40 +1,27 @@
 ---
 name: genui-customizer-integration
-description: Integrate genui_customizer into an existing Flutter GenUI app for runtime component selection, manual property editing, storage, and reusable appearance across generated surfaces. Use when adapting an existing GenUI catalog and A2UI message flow; not for building a new GenUI transport.
+description: Integrate genui_customizer 0.2.x into an A2UI v1.0 Flutter host for runtime visual edits and reusable appearance preferences. Use with a2ui_core 0.7.x and a2ui_flutter 0.3.x, not the discontinued genui API.
 ---
 
-# Integrate GenUI Touch
+# Integrate GenUI Touch with A2UI Flutter
 
-This skill applies only to the current 0.1.x `genui` API. Do not use it for the
-planned `a2ui_flutter` package redesign; follow
-[the A2UI package plan](../../doc/a2ui-package-plan.md) until a replacement
-integration skill is written.
+Read the host's catalog, `MessageProcessor`, message path, authorization, and storage boundary first. The host owns those systems and decides which users may edit and persist appearance.
 
-Read the host's existing catalog, `SurfaceController`, A2UI message handler, and persistence boundary before editing. Use the package's public import, `package:genui_customizer/genui_customizer.dart`. Keep the host's transport, identity model, and authorization decisions.
+1. Declare `TouchContract` entries for each editable catalog ID and component type. List only presentation literals with `TouchProperty`; the choices must be valid for the host's catalog schema. Do not allow data bindings, actions, component links, or identifiers.
+2. Create one `GenUiTouchController` for the host processor. Pass the contracts, optional stable `roleFor`, and host-owned `TouchStorage`. Decorate the catalog with `controller.decorateCatalog(baseCatalog)`, construct the `MessageProcessor<ComponentImplementation>` with that catalog, then call `controller.attachProcessor(processor)`.
+3. Route every incoming A2UI v1.0 agent message through `controller.processAgentMessages(...)`. Render the host processor's surface with `A2uiSurface`. The controller applies saved defaults to later component messages before the processor sees them.
+4. Connect `controller.onStudioRequested` to `showGenUiTouchStudio(context: ..., controller: ..., surfaceId: ...)` and provide a visible Studio control. Decorated components support triple-click on desktop and long press on touch devices. The host disposes both controller and processor.
 
-## Connect the catalog and editor
+The [package README](../../README.md#integration) has a minimal setup snippet. The [chat example](../../example/) shows a runnable host integration; its offline mode needs no model key.
 
-1. Build an `EditableCatalogRegistry` with the host's catalog ID and a host-managed version. Declare only visual properties that the real rendering catalog accepts. The built-in editor renders enumeration controls; other property types need a custom editor. Keep `id`, `component`, child links, actions, content, and bindings out of the editable allowlist. `protectedProperties` is an additional guard, not a substitute for a narrow allowlist.
-2. Attach one `EditableGenUiController` per independently edited surface. Component IDs must be unique within a snapshot. Supply `onSnapshotChanged` to send edited `updateComponents` messages to the existing `SurfaceController`, and dispose the controller with its owner.
-3. Decorate the catalog items *used by the renderer* with `decorateEditableCatalogItem`. The decorator supplies desktop triple-click and touch long-press selection to open the Studio; while it is open, one click or tap on another rendered widget changes the selection. Connect `onEditorRequested` to `showEditableGenUiStudio`; also provide a visible way to open it. Pass nonempty `galleryTypes` whose types have registry contracts, using names from the host catalog. `galleryCatalog` is optional.
-4. Feed incoming `UpdateComponentsMessage` definitions into `editor.setSurfaceSnapshot`. That call replaces the complete editable snapshot. Merge incremental component updates for a surface before calling it. Route create, data, and delete messages through the host as before. Do not render an incoming component update twice when `onSnapshotChanged` already renders the replacement snapshot.
+## Edits and persistence
 
-For a complete, executable manual-edit and regeneration example, read [examples/integration_test.dart](examples/integration_test.dart). Adapt its synthetic `Text.variant` values and role resolver to the host catalog.
+`controller.select(...)` and `controller.edit(property, value)` change an approved literal on the current surface. `undo()` and `redo()` affect local edits. Bound or computed values are rejected. Incoming agent updates that replace an edited component take precedence over its local undo history.
 
-## Manual edits and storage
+`setGalleryDefault(...)` stores a default for future components of a catalog type. To reuse a selected value across regenerated components, supply a stable `roleFor` and call `setRoleDefaultForSelection(property)`. `save()` persists the resulting `TouchProfile` through the host's `TouchStorage`; `load()` restores it. A local `edit()` alone does not create a reusable preference. Scope storage to the correct user or tenant and load it before processing new generated surfaces.
 
-`controller.select(GenUiComponentSelection(...))` or the decorated widget's gesture sets the selection. `controller.apply({'variant': 'h1'})` edits the selected component locally and calls `onSnapshotChanged`; no composer is needed. The controller also exposes `undo()`, `redo()`, `cancel()`, `save()`, `reload()`, `isDirty`, and `error`. Check `error` after `apply`, which reports a rejected edit there rather than throwing it.
+`showGenUiTouchStudio` stores window bounds in local shared preferences by default. This is separate from appearance storage. The optional `TouchPropertyComposer` lets a host AI service propose values; the same contract checks apply before an edit.
 
-`showEditableGenUiStudio` persists its movable window position and size by default through the package's app-local shared preferences. Do not add a bounds store to the host solely for this. Pass `boundsPersistence: null` to disable persistence, or supply both `loadBounds` and `saveBounds` when the host needs custom storage. These bounds are separate from edited component snapshots and appearance profiles.
+## Verify the host
 
-Provide `CallbackEditableGenUiStorage(onLoad: ..., onSave: ...)` or implement `EditableGenUiStorage`. Raw snapshots are suitable for conversation-local checkpoints. For preferences that survive new AI output with different component IDs, persist a `GenUiAppearanceProfile` instead:
-
-- Keep the unedited, visible snapshot as the baseline. On save, call `GenUiAppearanceProfile.capture(before: baseline, after: edited, registry: registry, roleFor: roleFor, previous: profile)`, then serialize `profile.toJson()` in host-owned storage. Update the baseline only after persistence succeeds. A component needs a stable, host-defined role to yield a reusable rule.
-- On startup, decode with `GenUiAppearanceProfile.fromJson`; accept only the matching `catalogId` and `catalogVersion`, or migrate explicitly. Load the profile before processing the first generated result.
-- Before rendering each new `updateComponents` message, call `profile.applyToMessage(message: raw, registry: registry, roleFor: roleFor)`. This reapplies approved properties while retaining the new component IDs and bindings. Then make the resulting definition the controller's new baseline. The host must merge incremental updates first and keep separate controllers for surfaces that reuse component IDs.
-
-Do not assume that `save()` alone preserves manual edits through regeneration: `setSurfaceSnapshot` replaces the current definition. Define storage scope and access control in the host. Optional AI property proposals use `EditableGenUiComposer`; manual editing and profile replay do not require it.
-
-## Verify in the target app
-
-Run the host's analyzer and tests. Exercise selection by gesture and by component tree, including a single click or tap on another widget while the Studio is open. Check that moving and resizing the Studio survives closing and reopening it unless persistence was disabled. Verify a local property change, undo/cancel/save, reload, and a regenerated surface with new component IDs and new data bindings. Confirm that a noneditable field remains unchanged. Use the example test as a small reference, not as a replacement for an end-to-end host test.
+Run analyzer, tests, and a build for the host's target platform. Exercise selection, an approved edit, undo and redo, Gallery defaults on later content, role defaults after new component IDs, and rejection of a bound value. The package's [widget test](../../test/touch_test.dart) and the [example integration test](../../example/test/touch_integration_test.dart) cover the basic paths.

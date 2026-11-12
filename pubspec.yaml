@@ -1,32 +1,32 @@
 name: genui_customizer
-description: GenUI Touch lets users customize Flutter GenUI interfaces at runtime and save appearance preferences.
-version: 0.1.1
+description: GenUI Touch lets users customize A2UI Flutter surfaces at runtime and save appearance preferences.
+version: 0.2.0-dev.1
 homepage: https://github.com/Laszlo11-dev/genui_customizer
 repository: https://github.com/Laszlo11-dev/genui_customizer
 issue_tracker: https://github.com/Laszlo11-dev/genui_customizer/issues
-documentation: https://github.com/Laszlo11-dev/genui_customizer/blob/main/doc/a2ui-package-plan.md
+documentation: https://github.com/Laszlo11-dev/genui_customizer/blob/main/README.md
 
 funding:
   - https://github.com/sponsors/Laszlo11-dev
 
 topics:
   - flutter
-  - genui
+  - a2ui
   - a2ui
   - customization
   - generative-ui
 
 screenshots:
-  - description: 'Edit a live GenUI surface with the component tree, property editor, and selected widget preview.'
+  - description: 'Earlier 0.1.x host: edit a live surface with the component tree and property editor.'
     path: doc/images/studio-overview.png
-  - description: 'Choose text styles in the compact GenUI Touch window while previewing changes in the running application.'
+  - description: 'Earlier 0.1.x host: choose text styles in the compact Studio window.'
     path: doc/images/surface-editing.png
-  - description: 'Edit a complex layout with a live preview, AI regeneration preferences, and widget-level AI edits.'
+  - description: 'Earlier 0.1.x host: edit a complex layout with a live preview.'
     path: doc/images/complex-layout-ai-regeneration.png
 
 environment:
   sdk: ^3.13.0
-  flutter: '>=3.35.7'
+  flutter: '>=3.38.0'
 
 platforms:
   android:
@@ -37,19 +37,16 @@ platforms:
   windows:
 
 dependencies:
-  a2ui_core: ^0.1.1
+  a2ui_core: ^0.7.0
+  a2ui_flutter: ^0.3.0
   flutter:
     sdk: flutter
-  genui: ^0.10.4
-  json_schema_builder: ^0.1.7
   shared_preferences: ^2.5.3
-  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  shared_preferences_platform_interface: ^2.4.2
   skills_lint: ^0.5.3+1
 
 flutter:

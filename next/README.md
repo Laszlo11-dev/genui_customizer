@@ -1,5 +1,8 @@
 # GenUI Touch for A2UI Flutter
 
+This directory is the development snapshot used for the 0.2.0-dev.1 migration.
+The publishable package and current example now live at the repository root.
+
 `genui_customizer` 0.2.0-dev.1 is a new package implementation for A2UI v1.0. It requires `a2ui_core` 0.7.x, `a2ui_flutter` 0.3.x, and Flutter 3.38 or later. It does not expose the previous `genui` API.
 
 The host still owns the A2UI `MessageProcessor`, catalogs, actions, data bindings, authorization, and storage. Touch decorates approved component builders for runtime selection, edits approved literal presentation properties through A2UI updates, and layers saved defaults onto later agent messages. `GenUiTouchStudio` offers a Surface editor and a runtime Gallery with editable component defaults. A host can supply a live Gallery preview widget.

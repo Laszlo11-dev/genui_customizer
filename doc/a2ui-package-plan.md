@@ -1,8 +1,10 @@
 # A2UI package redesign plan
 
-Status: design target, not an implemented API. The current 0.1.x source still
-uses `genui` 0.10.4 and `a2ui_core` 0.1.1. The old Restaurant Finder and Simple
-Chat applications were removed before starting the redesign.
+Status: historical design plan. The repository-root 0.2.0-dev.1 package now
+implements the A2UI v1.0 API; consult the root README and source for current
+behavior. Some design targets below remain future work, including durable
+appearance storage in the example. The 0.1.x implementation is available in
+Git history.
 
 ## Concept assessment (2026-11-12)
 
