@@ -1,0 +1,24 @@
+name: a2ui_tech_reader
+description: A Touch-free, RSS-driven A2UI Flutter news reader with occasion-based layouts.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  a2ui_core: ^0.7.0
+  a2ui_flutter: ^0.3.0
+  http: ^1.6.0
+  xml: ^7.1.0
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

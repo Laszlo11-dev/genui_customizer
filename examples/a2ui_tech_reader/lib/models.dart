@@ -1,0 +1,140 @@
+import 'package:flutter/material.dart';
+
+class NewsItem {
+  const NewsItem({
+    required this.title,
+    required this.link,
+    required this.source,
+    this.summary = '',
+    this.published,
+    this.imageUrl,
+  });
+
+  final String title;
+  final Uri link;
+  final String source;
+  final String summary;
+  final DateTime? published;
+  final String? imageUrl;
+}
+
+class FeedPreset {
+  const FeedPreset(this.name, this.url);
+  final String name;
+  final String url;
+}
+
+const feedPresets = <FeedPreset>[
+  FeedPreset('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/index'),
+  FeedPreset('The Verge', 'https://www.theverge.com/rss/index.xml'),
+  FeedPreset('NASA', 'https://www.nasa.gov/feed/'),
+  FeedPreset('Hacker News', 'https://news.ycombinator.com/rss'),
+];
+
+enum Occasion { auto, everyday, christmas, winter, easter }
+
+extension OccasionInfo on Occasion {
+  String get label => switch (this) {
+        Occasion.auto => 'Automatikus',
+        Occasion.everyday => 'Everyday',
+        Occasion.christmas => 'Christmas',
+        Occasion.winter => 'Winter Games',
+        Occasion.easter => 'Easter',
+      };
+
+  IconData get icon => switch (this) {
+        Occasion.auto => Icons.auto_awesome_outlined,
+        Occasion.everyday => Icons.public,
+        Occasion.christmas => Icons.celebration_outlined,
+        Occasion.winter => Icons.ac_unit,
+        Occasion.easter => Icons.local_florist_outlined,
+      };
+}
+
+// Gregorian computus; Easter Sunday falls in March or April.
+DateTime easterSunday(int year) {
+  final a = year % 19;
+  final b = year ~/ 100;
+  final c = year % 100;
+  final d = b ~/ 4;
+  final e = b % 4;
+  final f = (b + 8) ~/ 25;
+  final g = (b - f + 1) ~/ 3;
+  final h = (19 * a + b - d - g + 15) % 30;
+  final i = c ~/ 4;
+  final k = c % 4;
+  final l = (32 + 2 * e + 2 * i - h - k) % 7;
+  final m = (a + 11 * h + 22 * l) ~/ 451;
+  final month = (h + l - 7 * m + 114) ~/ 31;
+  final day = ((h + l - 7 * m + 114) % 31) + 1;
+  return DateTime(year, month, day);
+}
+
+Occasion resolvedOccasion(Occasion selected, DateTime now) {
+  if (selected != Occasion.auto) return selected;
+  if (now.month == 12 && now.day >= 1) return Occasion.christmas;
+  final easter = easterSunday(now.year);
+  final delta = DateTime(now.year, now.month, now.day).difference(easter).inDays;
+  if (delta >= -7 && delta <= 1) return Occasion.easter;
+  // 'Winter Games' is a manually selectable showcase edition. We don't
+  // assume an Olympics is taking place every winter.
+  return Occasion.everyday;
+}
+
+class PortalStyle {
+  const PortalStyle({
+    required this.accent,
+    required this.background,
+    required this.surface,
+    required this.ink,
+    required this.headline,
+    required this.kicker,
+    required this.heroLabel,
+  });
+  final Color accent;
+  final Color background;
+  final Color surface;
+  final Color ink;
+  final String headline;
+  final String kicker;
+  final String heroLabel;
+}
+
+PortalStyle styleFor(Occasion occasion) => switch (occasion) {
+      Occasion.christmas => const PortalStyle(
+          accent: Color(0xFFAB3439),
+          background: Color(0xFFF8F5EF),
+          surface: Colors.white,
+          ink: Color(0xFF153C35),
+          headline: 'The holiday edit',
+          kicker: 'TECH / FESTIVE EDITION',
+          heroLabel: 'GIFT-WORTHY IDEAS · WINTER TECH',
+        ),
+      Occasion.winter => const PortalStyle(
+          accent: Color(0xFF1768A0),
+          background: Color(0xFFEDF6FB),
+          surface: Colors.white,
+          ink: Color(0xFF122C42),
+          headline: 'Technology in motion',
+          kicker: 'TECH / WINTER GAMES EDITION',
+          heroLabel: 'WINTER GAMES · INNOVATION',
+        ),
+      Occasion.easter => const PortalStyle(
+          accent: Color(0xFF6B779D),
+          background: Color(0xFFFAF6FB),
+          surface: Colors.white,
+          ink: Color(0xFF343455),
+          headline: 'Fresh ideas, new season',
+          kicker: 'TECH / SPRING EDITION',
+          heroLabel: 'SPRING · FRESH FINDS',
+        ),
+      _ => const PortalStyle(
+          accent: Color(0xFF3957D7),
+          background: Color(0xFFF3F5F9),
+          surface: Colors.white,
+          ink: Color(0xFF192336),
+          headline: 'The future, in focus.',
+          kicker: 'TECH / DAILY EDITION',
+          heroLabel: 'TODAY IN TECHNOLOGY',
+        ),
+    };
