@@ -1,0 +1,55 @@
+name: Deploy A2UI example to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pages.yml'
+      - '.fvmrc'
+      - 'example/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - 'doc/images/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Build offline demo
+        working-directory: example
+        run: |
+          flutter pub get
+          flutter build web --release --base-href /genui_customizer/
+      - name: Keep README image URLs
+        run: |
+          mkdir -p example/build/web/doc
+          cp -r doc/images example/build/web/doc/images
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: example/build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

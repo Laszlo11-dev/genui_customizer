@@ -4,6 +4,8 @@
 
 > **Breaking change in 0.2.0-dev.1:** GenUI Touch has been rewritten for **A2UI v1.0**, `a2ui_core` 0.7.x, and `a2ui_flutter` 0.3.x. The 0.1.x `genui` API has been removed. Existing 0.1.x integrations must be updated; this release is not source compatible, and it does not automatically migrate saved 0.1.x snapshots or appearance profiles.
 
+**[Try the A2UI chat example in your browser](https://laszlo11-dev.github.io/genui_customizer/).** It uses a fixed offline reply, so no account or API key is needed.
+
 ## What it does
 
 GenUI Touch works inside a running host app. **Triple-click** a component on desktop, **long-press** it on touch devices, or select it from the Studio's component tree. The host decides which catalog properties are editable. Touch changes approved presentation literals through the host's A2UI `MessageProcessor`; it does not edit data bindings, actions, component relationships, or identifiers.
