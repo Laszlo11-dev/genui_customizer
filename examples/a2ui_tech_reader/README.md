@@ -1,6 +1,6 @@
 # A2UI Tech Reader
 
-A standalone Flutter RSS / Atom reader. **Flutter owns the app shell**: source and occasion controls, search, navigation, and the JSON inspector. **A2UI owns the news stream**: story cards, images, metadata, sections, article actions, and loading / empty / error states. Touch is not used.
+A standalone Flutter RSS / Atom reader. **Flutter owns the app shell**: source and occasion controls, search, navigation, and the JSON inspector. **A2UI owns the news stream**: story cards, images, metadata, sections, article actions, and loading / empty / error states. GenUI Touch edits approved presentation values in that stream.
 
 ## Run
 
@@ -33,13 +33,19 @@ Windows and web platform runners are included in the example.
 
 RSS `<category>` and Atom `<category term="…">` tags are retained on each `NewsItem`. The **Hide politics & war** chip is enabled by default. It filters explicit political and war tags, plus clear political signals in titles. The broad `Policy` tag alone does not hide an article because it also covers technology regulation. This is a heuristic filter, so ambiguous or untagged stories may still need manual review. The chip can be turned off to show the full feed.
 
-The local gallery in `lib/news_gallery.dart` defines `NewsSection`, `NewsStory`, and `NewsGrid`. Their schemas expose presentation values in A2UI: colors, type sizes and weight, card shape and spacing, image position and height, button style, elevation, grid columns and gaps. The occasion builder supplies different values for Everyday, Christmas, Winter Games, and Easter. This gallery is ready for a later Touch integration, but Touch is not connected in this app yet. Content and article actions remain separate from presentation values.
+The local gallery in `lib/news_gallery.dart` defines `NewsSection`, `NewsStory`, and `NewsGrid`. Their schemas expose presentation values in A2UI: colors, type sizes and weight, card shape and spacing, image position and height, button style, elevation, grid columns and gaps. Touch edits only the presentation properties listed in `lib/news_touch.dart` as defaults for each catalog type. Content, article links, and actions remain outside its contract.
+
+## Edit the news appearance
+
+Open **GenUI Touch** with the tune icon in the app bar, triple-click a news component on desktop, or long-press it on touch devices. The gesture opens the editor on that component's **type**. Choose **NewsSection**, **NewsStory**, or **NewsGrid**, then change a property. The new value applies immediately to every current component of that type and to later feed updates. The editor shows a current example value until you set a default. Use the reset icon beside an overridden property, **Use original** in the color chooser, or **Restore original [type] appearance** to remove overrides and show the generated values for the current edition. Press **Save profile** to keep changed defaults or resets after restart; the button is disabled when there is nothing new to save. **Discard unsaved defaults** restores the last saved profile and updates the current feed. The profile is stored locally for this app installation using shared preferences and is loaded before the first generated surface. There is no account sync or tenant separation.
+
+Changing the source, search, occasion, or AI layout recreates the A2UI news surface and reapplies the type defaults. Old reader profiles retain their type defaults, but their item-role rules are ignored. Numeric values are clamped by the renderer. Color fields display the current color as a swatch and offer 16 named colors; previously saved colors outside the palette remain visible until changed.
 
 Switching occasions fades the old feed out, then brings the new A2UI surface in with a short upward motion. The header and shell colors transition alongside it. Rapid selections cancel the earlier transition cleanly.
 
 The four editions share the same renderer. Normal uses a lead article and three-column grid. Christmas groups actual gift-related stories. Winter Games separates winter-sport matches and shows a news wire. Easter groups actual spring-related stories. Group headings appear only when matching stories exist. No article content is changed. Adding an edition means adding a builder composition, with no occasion-specific Flutter article widgets.
 
-Use the **data object** button in the app bar to inspect the exact JSON passed to the processor. Refreshing, changing sources, searching, and switching occasions regenerate that JSON.
+Use the **data object** button in the app bar to inspect the generated A2UI JSON before Touch applies saved appearance. Refreshing, changing sources, searching, and switching occasions regenerate that JSON.
 
 ## Web feeds
 

@@ -2,11 +2,10 @@ import 'dart:convert';
 
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 /// Types the host permits a user to change for presentation purposes.
-enum TouchValueKind { choice, text, boolean, number }
+enum TouchValueKind { choice, text, boolean, number, color }
 
 /// A host-approved visual property. It must also exist in the A2UI catalog.
 final class TouchProperty {
@@ -31,6 +30,9 @@ final class TouchProperty {
       TouchValueKind.text => value is String,
       TouchValueKind.boolean => value is bool,
       TouchValueKind.number => value is num,
+      TouchValueKind.color =>
+        value is String &&
+            RegExp(r'^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$').hasMatch(value),
     };
   }
 }
@@ -154,6 +156,7 @@ final class GenUiTouchController extends ChangeNotifier {
     this.storage,
     this.composer,
     this.onStudioRequested,
+    this.showSelectionOutline = true,
     TouchProfile profile = const TouchProfile(),
   }) : _contracts = Map.unmodifiable({
          for (final contract in contracts)
@@ -167,6 +170,7 @@ final class GenUiTouchController extends ChangeNotifier {
   final TouchStorage? storage;
   final TouchPropertyComposer? composer;
   VoidCallback? onStudioRequested;
+  final bool showSelectionOutline;
   MessageProcessor<ComponentImplementation>? _processor;
   TouchProfile _savedProfile;
   TouchProfile _profile;
@@ -190,6 +194,7 @@ final class GenUiTouchController extends ChangeNotifier {
   bool get canUndo => _undo.isNotEmpty;
   bool get canRedo => _redo.isNotEmpty;
   bool get canPersist => storage != null;
+  bool get hasUnsavedProfileChanges => !identical(_profile, _savedProfile);
   Iterable<TouchContract> get contracts => _contracts.values;
 
   void attachProcessor(MessageProcessor<ComponentImplementation> value) {
@@ -416,6 +421,31 @@ final class GenUiTouchController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Removes one catalog-wide override so the host's generated value applies.
+  void removeGalleryDefault(TouchContract contract, String property) {
+    if (!contract.properties.containsKey(property)) {
+      throw FormatException('Property $property is not editable.');
+    }
+    final key = _typeKey(contract.catalogId, contract.componentType);
+    if (_profile.defaults[key]?.containsKey(property) != true) return;
+    final defaults = _nestedCopy(_profile.defaults);
+    defaults[key]!.remove(property);
+    if (defaults[key]!.isEmpty) defaults.remove(key);
+    _profile = TouchProfile(defaults: defaults, roles: _profile.roles);
+    _revision++;
+    notifyListeners();
+  }
+
+  /// Removes every override for a catalog type.
+  void clearGalleryDefaults(TouchContract contract) {
+    final key = _typeKey(contract.catalogId, contract.componentType);
+    if (!_profile.defaults.containsKey(key)) return;
+    final defaults = _nestedCopy(_profile.defaults)..remove(key);
+    _profile = TouchProfile(defaults: defaults, roles: _profile.roles);
+    _revision++;
+    notifyListeners();
+  }
+
   /// Saves the selected literal as a preference for a host-defined stable role.
   /// A local edit alone never changes reusable role preferences.
   void setRoleDefaultForSelection(String property) {
@@ -466,6 +496,7 @@ final class GenUiTouchController extends ChangeNotifier {
         (throw StateError('The host has not configured TouchStorage.'));
     await destination.save(_profile);
     _savedProfile = _profile;
+    notifyListeners();
   }
 
   Future<void> load() async {
@@ -554,24 +585,21 @@ final class _TouchRegion extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: controller,
-    builder: (context, _) => Listener(
-      onPointerDown: (event) {
-        if (event.kind == PointerDeviceKind.mouse) controller._tap(selection);
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onLongPress: () => controller.select(selection, openStudio: true),
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            border:
-                controller.selection?.surfaceId == selection.surfaceId &&
-                    controller.selection?.instanceId == selection.instanceId
-                ? Border.all(color: const Color(0xFF2962FF), width: 2)
-                : null,
-          ),
-          child: child,
+    builder: (context, _) => GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => controller._tap(selection),
+      onLongPress: () => controller.select(selection, openStudio: true),
+      child: DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          border:
+              controller.showSelectionOutline &&
+                  controller.selection?.surfaceId == selection.surfaceId &&
+                  controller.selection?.instanceId == selection.instanceId
+              ? Border.all(color: const Color(0xFF2962FF), width: 2)
+              : null,
         ),
+        child: child,
       ),
     ),
   );

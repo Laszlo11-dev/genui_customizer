@@ -59,6 +59,10 @@ To persist preferences, implement `TouchStorage`, load its `TouchProfile` before
 
 The [integration skill](skills/genui-customizer-integration/SKILL.md) gives further host guidance. The [example](example/) adapts the official A2UI Flutter chat app. It runs with a fixed offline demo reply by default and can use Gemini when configured; see its [run instructions](example/README.md). The example does not provide durable appearance storage.
 
+For catalog color literals, use `TouchValueKind.color`. The Studio shows a current-color swatch and a built-in palette of 16 colors; existing valid `#RRGGBB` and `#AARRGGBB` values remain visible even when they are outside that palette.
+
+Hosts that edit only catalog-wide defaults can open `showGenUiTouchStudio` with `galleryOnly: true`. Pass `onGalleryChanged` to regenerate the current surface after a default changes or is discarded; future agent messages automatically receive the defaults through `processAgentMessages`. Decorated components can still open this mode by triple-click or long-press, with the touched component type selected. Set `showSelectionOutline: false` to avoid an individual-item border.
+
 ## Migrating from 0.1.x
 
 - Replace the old `genui` based integration with `a2ui_core` 0.7.x and `a2ui_flutter` 0.3.x. Use A2UI v1.0 messages.

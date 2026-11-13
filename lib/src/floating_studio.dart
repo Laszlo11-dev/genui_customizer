@@ -13,6 +13,8 @@ Future<void> showGenUiTouchStudio({
   required GenUiTouchController controller,
   required String surfaceId,
   TouchGalleryPreview? galleryPreview,
+  bool galleryOnly = false,
+  VoidCallback? onGalleryChanged,
   TouchStudioBoundsPersistence? boundsPersistence =
       const SharedPreferencesTouchStudioBoundsPersistence(),
 }) async {
@@ -32,6 +34,8 @@ Future<void> showGenUiTouchStudio({
         controller: controller,
         surfaceId: surfaceId,
         galleryPreview: galleryPreview,
+        galleryOnly: galleryOnly,
+        onGalleryChanged: onGalleryChanged,
         initialBounds: stored,
         boundsPersistence: boundsPersistence,
       ),
@@ -58,6 +62,8 @@ class _FloatingWindow extends StatefulWidget {
     required this.controller,
     required this.surfaceId,
     required this.galleryPreview,
+    required this.galleryOnly,
+    required this.onGalleryChanged,
     required this.initialBounds,
     required this.boundsPersistence,
   });
@@ -65,6 +71,8 @@ class _FloatingWindow extends StatefulWidget {
   final GenUiTouchController controller;
   final String surfaceId;
   final TouchGalleryPreview? galleryPreview;
+  final bool galleryOnly;
+  final VoidCallback? onGalleryChanged;
   final Rect? initialBounds;
   final TouchStudioBoundsPersistence? boundsPersistence;
 
@@ -179,6 +187,8 @@ class _FloatingWindowState extends State<_FloatingWindow> {
                         controller: widget.controller,
                         surfaceId: widget.surfaceId,
                         galleryPreview: widget.galleryPreview,
+                        galleryOnly: widget.galleryOnly,
+                        onGalleryChanged: widget.onGalleryChanged,
                         onMove: _move,
                         onMoveEnd: _remember,
                         onClose: () => Navigator.of(context).pop(),

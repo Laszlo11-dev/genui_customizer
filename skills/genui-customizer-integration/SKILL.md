@@ -8,9 +8,12 @@ description: Integrate genui_customizer 0.2.x into an A2UI v1.0 Flutter host for
 Read the host's catalog, `MessageProcessor`, message path, authorization, and storage boundary first. The host owns those systems and decides which users may edit and persist appearance.
 
 1. Declare `TouchContract` entries for each editable catalog ID and component type. List only presentation literals with `TouchProperty`; the choices must be valid for the host's catalog schema. Do not allow data bindings, actions, component links, or identifiers.
+   Use `TouchValueKind.color` for hex color literals when the host wants the Studio's 16-color chooser instead of text entry. Existing valid colors outside the palette still display as swatches.
 2. Create one `GenUiTouchController` for the host processor. Pass the contracts, optional stable `roleFor`, and host-owned `TouchStorage`. Decorate the catalog with `controller.decorateCatalog(baseCatalog)`, construct the `MessageProcessor<ComponentImplementation>` with that catalog, then call `controller.attachProcessor(processor)`.
 3. Route every incoming A2UI v1.0 agent message through `controller.processAgentMessages(...)`. Render the host processor's surface with `A2uiSurface`. The controller applies saved defaults to later component messages before the processor sees them.
 4. Connect `controller.onStudioRequested` to `showGenUiTouchStudio(context: ..., controller: ..., surfaceId: ...)` and provide a visible Studio control. Decorated components support triple-click on desktop and long press on touch devices. The host disposes both controller and processor.
+
+For a host that edits only catalog-wide defaults, open `showGenUiTouchStudio` with `galleryOnly: true`; provide `onGalleryChanged` to rebuild the current surface after a default changes or is discarded. Keep catalog decoration if triple-click and long-press should open the editor on the touched component type. Use `showSelectionOutline: false` on the controller to avoid an item-level selection border. Continue routing incoming messages through the controller so later components receive those defaults.
 
 The [package README](../../README.md#integration) has a minimal setup snippet. The [chat example](../../example/) shows a runnable host integration; its offline mode needs no model key.
 

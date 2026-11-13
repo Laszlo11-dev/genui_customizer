@@ -105,12 +105,47 @@ void main() {
       ),
     );
     expect(find.text('GenUI Touch'), findsOneWidget);
+    final undoFinder = find.ancestor(
+      of: find.byTooltip('Undo'),
+      matching: find.byType(IconButton),
+    );
+    final undoButton = tester.widget<IconButton>(undoFinder);
+    final colors = Theme.of(tester.element(undoFinder)).colorScheme;
+    expect(
+      undoButton.style?.foregroundColor?.resolve({WidgetState.disabled}),
+      colors.onInverseSurface.withValues(alpha: 0.38),
+    );
+    await tester.tap(find.byKey(const Key('genui-studio-menu')));
+    await tester.pumpAndSettle();
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text('GenUI debug'), findsOneWidget);
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+    expect(find.text('Make generated UI your own.'), findsOneWidget);
+    expect(find.text('pub.dev package'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('genui-studio-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('GenUI debug'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('"surfaceId": "one"'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Gallery'));
     await tester.pump();
     expect(find.textContaining('Default appearance'), findsOneWidget);
   });
 
   test('bound values cannot be edited and profile format is validated', () {
+    const color = TouchProperty(
+      name: 'backgroundColor',
+      label: 'Background color',
+      kind: TouchValueKind.color,
+    );
+    expect(color.accepts('#4F46E5'), isTrue);
+    expect(color.accepts('#804F46E5'), isTrue);
+    expect(color.accepts('not a color'), isFalse);
     expect(
       () => TouchProfile.fromJson({'formatVersion': 1}),
       throwsFormatException,

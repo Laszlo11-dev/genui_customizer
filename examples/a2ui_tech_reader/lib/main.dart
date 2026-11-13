@@ -5,12 +5,14 @@ import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:a2ui_flutter/basic_catalog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:genui_customizer/genui_customizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'a2ui_builder.dart';
 import 'ai_layout.dart';
 import 'models.dart';
 import 'news_gallery.dart';
+import 'news_touch.dart';
 import 'news_filter.dart';
 import 'rss_service.dart';
 import 'runtime_key_stub.dart'
@@ -55,6 +57,8 @@ class _ReaderPageState extends State<ReaderPage>
   final _sourceController = TextEditingController(text: feedPresets.first.url);
   final _searchController = TextEditingController();
   late MessageProcessor<ComponentImplementation> _processor;
+  late final GenUiTouchController _touch;
+  bool _touchReady = false;
   SurfaceModel<ComponentImplementation>? _surface;
   Occasion _occasion = Occasion.auto;
   String _source = feedPresets.first.name;
@@ -94,10 +98,39 @@ class _ReaderPageState extends State<ReaderPage>
         end: Offset.zero,
       ).chain(CurveTween(curve: Curves.easeOutCubic)),
     );
+    _touch = GenUiTouchController(
+      contracts: readerTouchContracts(),
+      storage: const ReaderTouchStorage(),
+      showSelectionOutline: false,
+    );
+    _touch.onStudioRequested = _openTouchStudio;
     _processor = _newProcessor();
-    // Show a real A2UI surface immediately, even before network responds.
+    _touch.attachProcessor(_processor);
+    _initializeTouch();
+  }
+
+  Future<void> _initializeTouch() async {
+    try {
+      await _touch.load();
+    } catch (error) {
+      // A damaged local profile must not prevent the news feed from loading.
+      debugPrint('Could not load Touch appearance: $error');
+    }
+    if (!mounted) return;
+    _touchReady = true;
     _render();
     _refresh();
+  }
+
+  void _openTouchStudio() {
+    if (!_touchReady) return;
+    showGenUiTouchStudio(
+      context: context,
+      controller: _touch,
+      surfaceId: NewsA2uiBuilder.surfaceId,
+      galleryOnly: true,
+      onGalleryChanged: _render,
+    );
   }
 
   @override
@@ -111,10 +144,8 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   MessageProcessor<ComponentImplementation> _newProcessor() {
-    // Keep actions tied to the article list that produced this surface.
-    final articles = _renderedArticles;
     final processor = MessageProcessor<ComponentImplementation>(
-      catalogs: [basicCatalog(), newsGalleryCatalog],
+      catalogs: [basicCatalog(), _touch.decorateCatalog(newsGalleryCatalog)],
     );
     processor.model.onSurfaceCreated.subscribe((created) {
       if (!mounted) return;
@@ -124,8 +155,8 @@ class _ReaderPageState extends State<ReaderPage>
       final match = RegExp(r'^open_(\d+)$').firstMatch(action.name);
       if (match == null) return;
       final index = int.tryParse(match.group(1)!);
-      if (index == null || index >= articles.length) return;
-      final url = articles[index].link;
+      if (index == null || index >= _renderedArticles.length) return;
+      final url = _renderedArticles[index].link;
       if (url.scheme == 'https' || url.scheme == 'http') {
         launchUrl(url, mode: LaunchMode.externalApplication);
       }
@@ -134,6 +165,7 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   void _render() {
+    if (!_touchReady) return;
     _renderedArticles = _filteredArticles();
     _messages = NewsA2uiBuilder.build(
       _renderedArticles,
@@ -144,12 +176,13 @@ class _ReaderPageState extends State<ReaderPage>
       aiLayout: _aiLayout,
       aiError: _aiError,
     );
-    final old = _processor;
-    _processor = _newProcessor();
     _surface = null;
-    old.dispose();
     try {
-      _processor.processMessages(_messages);
+      _touch.processAgentMessages({
+        'version': '1.0',
+        'deleteSurface': {'surfaceId': NewsA2uiBuilder.surfaceId},
+      });
+      _touch.processAgentMessages(_messages);
     } catch (e) {
       setState(() => _error = 'A2UI renderer: $e');
     }
@@ -307,6 +340,7 @@ class _ReaderPageState extends State<ReaderPage>
     _aiService?.dispose();
     _feedTransition.dispose();
     _rss.dispose();
+    _touch.dispose();
     _processor.dispose();
     _sourceController.dispose();
     _searchController.dispose();
@@ -362,6 +396,11 @@ class _ReaderPageState extends State<ReaderPage>
             ],
           ),
           actions: [
+            IconButton(
+              onPressed: _touchReady ? _openTouchStudio : null,
+              tooltip: 'Open GenUI Touch',
+              icon: const Icon(Icons.tune),
+            ),
             IconButton(
               onPressed: _showJson,
               tooltip: 'View A2UI JSON',

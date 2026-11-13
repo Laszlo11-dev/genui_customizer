@@ -1,37 +1,42 @@
-# Handover: A2UI Tech Reader
+# Handover: A2UI Tech Reader + GenUI Touch
 
-## Mi a helyes feladathatár?
+Állapot: 2026-11-13. Ez az aktuális átadás; a korábbi, Touch és Ask AI előtti handover elavult volt. A használati útmutató a [README.md](README.md), a feltárt dokumentációs és környezeti hibák az [INTEGRATION_NOTES.md](INTEGRATION_NOTES.md) fájlban vannak.
 
-A felhasználó pontosítása: **a hírek a hírfolyamban legyenek A2UI-val megjelenítve; az alkalmazás kerete nem kell, hogy A2UI legyen.** A korábban mellékelt specifikáció e tekintetben hibás. A Flutter keretben maradhat a fejléc, az RSS-forrás választása, az alkalomválasztó, a kereső és a fejlesztői JSON-nézet. Touch most nem része a feladatnak.
+## Feladathatár és jelenlegi működés
 
-## Jelenlegi állapot
+- A Flutter kezeli az alkalmazás keretét: RSS-forrás, keresés, alkalomválasztás, szűrés, navigáció és JSON-nézet. Az A2UI 1.0 hírfolyamot (`NewsSection`, `NewsStory`, `NewsGrid`, illetve a betöltési, üres és hibaállapotok) a hivatalos `MessageProcessor` és `A2uiSurface` jeleníti meg.
+- Az `RssService` RSS/Atom híreket olvas. A `NewsA2uiBuilder.build` a választott alkalom és a szűrt cikkek alapján állítja össze az A2UI üzeneteket. A cikkek címe, sorrendje, linkje és tartalma Touch-sal nem szerkeszthető.
+- Az **Ask AI** be van kötve. Gemini API-kulccsal a felhasználó prompt alapján megjelenést kérhet; kulcs nélkül a funkció le van tiltva. A modell a megjelenést választja, nem írja át a híreket. A kulcs és a webes használat korlátait a README írja le.
+- A **Hide politics & war** kapcsoló alapból aktív. A címek és kategóriák alapján heurisztikusan szűr.
 
-- Az `RssService` HTTP-n letölti és feldolgozza az RSS/Atom feedet. A `NewsItem` tartalmazza a címet, linket, forrást, leírást, opcionális képet és dátumot.
-- A Flutter keret szűri a híreket a kereső alapján, kezeli a forrás és az alkalom kiválasztását, majd meghívja a `NewsA2uiBuilder.build` metódust.
-- A builder A2UI 1.0 `createSurface` és `updateComponents` üzeneteket készít a telepített `a2ui_flutter 0.3.0` / `a2ui_core 0.7.0` Basic Cataloghoz. A hivatalos `MessageProcessor` és `A2uiSurface` dolgozza fel és jeleníti meg a **hírfolyamot**.
-- A hírkártyák, képek, források, dátumok, szekciók, olvasás gombok, valamint a betöltési, üres és hibaállapotok A2UI-komponensek. A cikk gombja A2UI actiont küld; a Flutter host a cikk eredeti URL-jét nyitja meg.
-- Az app sávjában a `{ }` ikon az aktuálisan a processzornak átadott A2UI JSON-t mutatja.
-- A Normal, Christmas, Winter Games és Easter hírfolyam eltérő A2UI komponensfát használ. Az alkalmi szekciók csak tényleges szöveges egyezésű hírekből épülnek, a hír tartalma nem módosul.
-- A webes és Windows Flutter platformfájlok bekerültek a példába; Touch függőség nincs benne.
+## Touch integráció
 
-## Fontos: az AI jelenleg nincs bekötve
+- A reader egy `GenUiTouchController` példányt és egy tartós `MessageProcessor` példányt tart fenn. Az első felület létrehozása előtt betölti a profilt; minden új A2UI üzenet a `processAgentMessages` útvonalon érkezik. Frissítéskor csak a felület törlődik és épül újra.
+- A `newsGalleryCatalog` dekorált, így az app sávjának Touch gombja mellett az asztali **triplaklikk** és az érintéses **hosszan nyomás** is megnyitja a Studiot. A megérintett komponens típusa lesz kiválasztva. A Story Gridbe ágyazva is helyesen működik.
+- A Studio `galleryOnly` módban nyílik. Csak a **NewsSection, NewsStory és NewsGrid típust** szerkeszti, nincs külön kártyánkénti szerkesztés vagy kijelölési keret. Egy módosítás az aktuális felület minden azonos típusú elemén rögtön megjelenik, és a későbbi felületfrissítésekre is érvényes.
+- A színekhez saját, 16 színű választó van. A mező megmutatja a tényleges színt; a palettán kívüli korábban mentett szín is látható, de új választás csak a palettáról történik.
+- A módosított mező melletti reset ikon, a színválasztó **Use original** gombja és a **Restore original [type] appearance** törli a megfelelő típus alapérték-felülírását. Így az aktuális alkalom vagy AI-elrendezés által generált érték tér vissza. A **Discard unsaved defaults** más művelet: a legutóbb mentett profilt állítja vissza.
+- A **Save profile** a típusalapértékeket és a visszaállításokat `shared_preferences` tárolóba menti, helyben, ezen az alkalmazástelepítésen. Régi profilok típusalapértékei megmaradnak; régi, egyedi elemekhez kötött role override-ok betöltéskor kimaradnak.
 
-**Igen, az elrendezési szabályok előre meg vannak írva** a `lib/a2ui_builder.dart` fájlban. A feed tartalma változik, és ebből minden frissítéskor új A2UI JSON készül, de az elrendezést nem AI választja vagy generálja. Az A2UI itt protokoll és renderer, nem AI-szolgáltatás. A mellékelt eredeti specifikáció kifejezetten azt írta, hogy AI nem kell; a felhasználó később ezt megkérdőjelezte. Az AI kívánt szerepe **nyitott termékdöntés**. Mielőtt bárki modellt vagy promptot kötne be, tisztázni kell, hogy az AI a teljes hírfolyam A2UI fáját készítse-e, csak a hírkiemelést és csoportosítást válassza-e, vagy más feladata legyen. A jelenlegi determinisztikus működést nem szabad AI-demóként bemutatni.
+## Fontos fájlok
 
-## Fájlok
+- `lib/main.dart`: host életciklus, Touch-bekötés, felület újraépítése, Ask AI és cikkakciók.
+- `lib/news_touch.dart`: Touch szerződések és `ReaderTouchStorage`.
+- `lib/news_gallery.dart`, `lib/a2ui_builder.dart`: A2UI komponensek és az alkalmi kompozíciók.
+- `../../lib/src/touch.dart`: típuspreferenciák, egy mező vagy teljes típus felülírásának törlése, triplaklikk.
+- `../../lib/src/studio.dart`, `../../lib/src/color_field.dart`: típusszintű szerkesztő, visszaállító gombok és színválasztó.
+- `test/news_touch_test.dart`: triplaklikk, típusalapértékek, mentés, visszaállítás és régi profil ellenőrzése.
+- `../../skills/genui-customizer-integration/SKILL.md`: általános Touch integrációs lépések.
 
-- `lib/main.dart`: Flutter keret, RSS-életciklus, keresés, alkalomválasztás, A2UI processor és action kezelés, JSON-nézet.
-- `lib/a2ui_builder.dart`: a négy, jelenleg **kézzel meghatározott** A2UI hírfolyam-kompozíció.
-- `lib/rss_service.dart`: RSS/Atom letöltés és XML-feldolgozás; ISO és gyakori RFC 822 dátumok támogatása.
-- `lib/models.dart`: hírmodell, feed presetek, alkalom és Flutter keretstílus.
-- `test/a2ui_render_test.dart`: mind a négy generált üzenetsor ellenőrzése a hivatalos rendererrel.
+## Ellenőrzés
 
-## Ellenőrzés és korlátok
+- A projekt `.fvm/flutter_sdk` SDK-jával a csomag és a reader `flutter analyze --no-pub` ellenőrzése hibamentes.
+- A csomag tesztjei és a reader teljes tesztkészlete sikeresek (reader: 29 teszt).
+- A reader Windows Release buildje a legutóbbi visszaállítási módosítás után sikeres. A web build a triplaklikk visszaállítása után sikeres volt; a legutóbbi reset módosítás után külön web build nem futott.
+- Élő RSS-forrással végzett interaktív Windows vagy böngészős próbát nem végeztünk. Böngészőben a publikus feedek CORS-szabályai befolyásolják a működést. A web build korábban nem blokkoló CupertinoIcons font figyelmeztetést adott.
 
-A legutóbbi módosítások után sikeres volt a `flutter test --no-pub` (9 teszt), a `flutter analyze --no-pub`, a `flutter build web --no-pub --no-wasm-dry-run` és a `flutter build windows --no-pub`. Ez fordítás és widgetteszt; élő feedet megnyitó, interaktív webes vagy Windows felhasználói próbát nem végeztünk.
+## Nyitott korlátok és folytatás
 
-A böngésző CORS miatt több nyilvános feedet nem tud közvetlenül letölteni. Az app ezt A2UI hibaállapotként jelzi. Stabil publikus webdemóhoz CORS-t engedő feed vagy saját, azonos eredetű feed gateway kell. A kulcsszavas alkalmi csoportosítás egyszerű heurisztika: nem jelent tartalmi megértést. A jelenlegi módosítások nincsenek commitolva; a példa projekt munkafájljait meg kell őrizni.
-
-## Következő egyeztetés
-
-A következő fejlesztés előtt a felhasználóval az AI szerepét kell rögzíteni. A már tisztázott Flutter keret / A2UI hírfolyam határt és a Touch kihagyását tartsuk meg, hacsak a felhasználó másként nem kéri.
+- A profil helyi, nincs felhasználói fiókhoz kötés vagy szinkron.
+- A `hasUnsavedProfileChanges` jelenleg profilobjektum-azonosságot vizsgál. Ha egy felülírást kézzel pontosan a mentett értékre állítanak vissza, a Mentés gomb akkor is aktív maradhat. A mentés tartalma ettől helyes, de a dirty jelzés pontosítható mély összehasonlítással.
+- A jelenlegi változtatások nincsenek commitolva; a munkafájlokat és a korábbi módosításokat meg kell őrizni.
