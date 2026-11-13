@@ -15,11 +15,21 @@ import 'news_gallery.dart';
 import 'news_touch.dart';
 import 'news_filter.dart';
 import 'rss_service.dart';
-import 'runtime_key_stub.dart'
-    if (dart.library.io) 'runtime_key_io.dart'
-    as runtime_key;
+import 'runtime_key_stub.dart' if (dart.library.io) 'runtime_key_io.dart' as runtime_key;
 
 const _definedApiKey = String.fromEnvironment('GEMINI_API_KEY');
+
+enum _DemoUser {
+  tenantEditor('Tenant editor', 'An editor for the tenant.'),
+  joe('Joe', 'Joe has trouble seeing clearly.'),
+  fred('Fred', 'Fred is curious and does not overwrite what he receives.'),
+  emily('Emily', 'Emily loves every color, as long as it\'s pink.');
+
+  const _DemoUser(this.label, this.description);
+
+  final String label;
+  final String description;
+}
 
 void main() {
   final key = _definedApiKey.isNotEmpty
@@ -46,8 +56,7 @@ class ReaderPage extends StatefulWidget {
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends State<ReaderPage>
-    with SingleTickerProviderStateMixin {
+class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateMixin {
   final _rss = RssService();
   GeminiLayoutService? _aiService;
   AiLayout? _aiLayout;
@@ -61,6 +70,7 @@ class _ReaderPageState extends State<ReaderPage>
   bool _touchReady = false;
   SurfaceModel<ComponentImplementation>? _surface;
   Occasion _occasion = Occasion.auto;
+  _DemoUser _demoUser = _DemoUser.tenantEditor;
   String _source = feedPresets.first.name;
   List<NewsItem> _articles = [];
   List<NewsItem> _renderedArticles = [];
@@ -89,9 +99,7 @@ class _ReaderPageState extends State<ReaderPage>
       reverseDuration: const Duration(milliseconds: 170),
       value: 1,
     );
-    _feedOpacity = _feedTransition.drive(
-      CurveTween(curve: Curves.easeOutCubic),
-    );
+    _feedOpacity = _feedTransition.drive(CurveTween(curve: Curves.easeOutCubic));
     _feedOffset = _feedTransition.drive(
       Tween<Offset>(
         begin: const Offset(0, 0.025),
@@ -294,9 +302,7 @@ class _ReaderPageState extends State<ReaderPage>
         .where((article) {
           if (_hidePolitical && isPoliticalNews(article)) return false;
           return query.isEmpty ||
-              '${article.title} ${article.summary} ${article.source}'
-                  .toLowerCase()
-                  .contains(query);
+              '${article.title} ${article.summary} ${article.source}'.toLowerCase().contains(query);
         })
         .take(24)
         .toList();
@@ -321,9 +327,7 @@ class _ReaderPageState extends State<ReaderPage>
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  child: SelectableText(
-                    const JsonEncoder.withIndent('  ').convert(_messages),
-                  ),
+                  child: SelectableText(const JsonEncoder.withIndent('  ').convert(_messages)),
                 ),
               ),
             ],
@@ -332,6 +336,111 @@ class _ReaderPageState extends State<ReaderPage>
       ),
     );
   }
+
+  Widget _buildTouchDemoPanel() => Card(
+    child: ExpansionTile(
+      key: const Key('touch-demo-panel'),
+      initiallyExpanded: true,
+      title: const Text('Touch demo'),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            SizedBox(
+              width: 390,
+              child: DropdownButtonFormField<_DemoUser>(
+                key: const Key('demo-user-picker'),
+                initialValue: _demoUser,
+                isExpanded: true,
+                itemHeight: 76,
+                decoration: const InputDecoration(
+                  labelText: 'User',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                selectedItemBuilder: (context) => [
+                  for (final user in _DemoUser.values)
+                    Align(alignment: Alignment.centerLeft, child: Text(user.label)),
+                ],
+                items: _DemoUser.values
+                    .map(
+                      (user) => DropdownMenuItem(
+                        value: user,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(user.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              user.description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (user) {
+                  if (user != null) setState(() => _demoUser = user);
+                },
+              ),
+            ),
+            SizedBox(
+              width: 260,
+              child: DropdownButtonFormField<Occasion>(
+                isExpanded: true,
+                initialValue: _occasion,
+                decoration: const InputDecoration(
+                  labelText: 'Occasion / A2UI layout',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                items: Occasion.values.map((o) {
+                  final locked = o == Occasion.askAi && _aiService == null;
+                  final disabledColor = Theme.of(context).disabledColor;
+                  return DropdownMenuItem(
+                    value: o,
+                    enabled: !locked,
+                    child: locked
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lock_outline, size: 16, color: disabledColor),
+                              const SizedBox(width: 8),
+                              Text(o.label, style: TextStyle(color: disabledColor)),
+                            ],
+                          )
+                        : Text(o.label),
+                  );
+                }).toList(),
+                onChanged: _changeOccasion,
+              ),
+            ),
+            Tooltip(
+              message: 'Open GenUI Touch',
+              child: OutlinedButton.icon(
+                onPressed: _touchReady ? _openTouchStudio : null,
+                icon: const Icon(Icons.tune),
+                label: const Text('Touch'),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _showJson,
+              icon: const Icon(Icons.data_object),
+              label: const Text('Debug'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Align(alignment: Alignment.centerLeft, child: Text(_demoUser.description)),
+      ],
+    ),
+  );
 
   @override
   void dispose() {
@@ -356,15 +465,10 @@ class _ReaderPageState extends State<ReaderPage>
       colorScheme: ColorScheme.fromSeed(
         seedColor: style.accent,
         surface: style.surface,
-        brightness: style.ink == Colors.white
-            ? Brightness.dark
-            : Brightness.light,
+        brightness: style.ink == Colors.white ? Brightness.dark : Brightness.light,
       ),
       scaffoldBackgroundColor: style.background,
-      textTheme: ThemeData.light().textTheme.apply(
-        bodyColor: style.ink,
-        displayColor: style.ink,
-      ),
+      textTheme: ThemeData.light().textTheme.apply(bodyColor: style.ink, displayColor: style.ink),
       cardTheme: CardThemeData(
         color: style.surface,
         elevation: 0,
@@ -387,25 +491,11 @@ class _ReaderPageState extends State<ReaderPage>
               const SizedBox(width: 10),
               const Text(
                 'A2UI / TECH READER',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                  fontSize: 17,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.3, fontSize: 17),
               ),
             ],
           ),
           actions: [
-            IconButton(
-              onPressed: _touchReady ? _openTouchStudio : null,
-              tooltip: 'Open GenUI Touch',
-              icon: const Icon(Icons.tune),
-            ),
-            IconButton(
-              onPressed: _showJson,
-              tooltip: 'View A2UI JSON',
-              icon: const Icon(Icons.data_object),
-            ),
             IconButton(
               onPressed: _loading ? null : _refresh,
               tooltip: 'Refresh RSS',
@@ -421,14 +511,14 @@ class _ReaderPageState extends State<ReaderPage>
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [
                 const SizedBox(height: 12),
+                _buildTouchDemoPanel(),
+                const SizedBox(height: 20),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 380),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
-                  layoutBuilder: (current, previous) => Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [...previous, ?current],
-                  ),
+                  layoutBuilder: (current, previous) =>
+                      Stack(alignment: Alignment.centerLeft, children: [...previous, ?current]),
                   transitionBuilder: (child, animation) => FadeTransition(
                     opacity: animation,
                     child: SlideTransition(
@@ -465,9 +555,7 @@ class _ReaderPageState extends State<ReaderPage>
                       const SizedBox(height: 8),
                       Text(
                         'Live RSS stories · rendered by A2UI',
-                        style: TextStyle(
-                          color: style.ink.withValues(alpha: 0.7),
-                        ),
+                        style: TextStyle(color: style.ink.withValues(alpha: 0.7)),
                       ),
                     ],
                   ),
@@ -483,62 +571,16 @@ class _ReaderPageState extends State<ReaderPage>
                       child: DropdownButtonFormField<String>(
                         isExpanded: true,
                         key: ValueKey(_source),
-                        initialValue: feedPresets.any((p) => p.name == _source)
-                            ? _source
-                            : null,
+                        initialValue: feedPresets.any((p) => p.name == _source) ? _source : null,
                         decoration: const InputDecoration(
                           labelText: 'RSS preset',
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
                         items: feedPresets
-                            .map(
-                              (p) => DropdownMenuItem(
-                                value: p.name,
-                                child: Text(p.name),
-                              ),
-                            )
+                            .map((p) => DropdownMenuItem(value: p.name, child: Text(p.name)))
                             .toList(),
                         onChanged: _choosePreset,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 260,
-                      child: DropdownButtonFormField<Occasion>(
-                        isExpanded: true,
-                        initialValue: _occasion,
-                        decoration: const InputDecoration(
-                          labelText: 'Occasion / A2UI layout',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        items: Occasion.values.map((o) {
-                          final locked =
-                              o == Occasion.askAi && _aiService == null;
-                          final disabledColor = Theme.of(context).disabledColor;
-                          return DropdownMenuItem(
-                            value: o,
-                            enabled: !locked,
-                            child: locked
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.lock_outline,
-                                        size: 16,
-                                        color: disabledColor,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        o.label,
-                                        style: TextStyle(color: disabledColor),
-                                      ),
-                                    ],
-                                  )
-                                : Text(o.label),
-                          );
-                        }).toList(),
-                        onChanged: _changeOccasion,
                       ),
                     ),
                     Tooltip(
@@ -610,10 +652,7 @@ class _ReaderPageState extends State<ReaderPage>
                   child: SlideTransition(
                     position: _feedOffset,
                     child: _surface != null
-                        ? A2uiSurface(
-                            key: ObjectKey(_surface),
-                            surface: _surface!,
-                          )
+                        ? A2uiSurface(key: ObjectKey(_surface), surface: _surface!)
                         : const Padding(
                             padding: EdgeInsets.all(16),
                             child: Text('Loading A2UI surface…'),
@@ -676,10 +715,7 @@ class _AiPromptDialogState extends State<_AiPromptDialog> {
       ),
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
       FilledButton(
         onPressed: () {
           final value = _controller.text.trim();

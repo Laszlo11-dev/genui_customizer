@@ -6,6 +6,18 @@ import 'bounds.dart';
 import 'studio.dart';
 import 'touch.dart';
 
+final _openStudios = Expando<_OpenStudio>();
+
+class _OpenStudio {
+  _OpenStudio(this.controller, this.onGalleryChanged)
+    : selection = controller.selection;
+
+  final GenUiTouchController controller;
+  final VoidCallback? onGalleryChanged;
+  TouchSelection? selection;
+  bool prompting = false;
+}
+
 /// Opens the same floating, movable, resizable Studio pattern as the earlier
 /// GenUI Touch UI. A2UI changes only the content and controller underneath it.
 Future<void> showGenUiTouchStudio({
@@ -19,6 +31,76 @@ Future<void> showGenUiTouchStudio({
       const SharedPreferencesTouchStudioBoundsPersistence(),
 }) async {
   final navigator = Navigator.of(context, rootNavigator: true);
+  final existing = _openStudios[navigator];
+  if (existing != null) {
+    if (existing.prompting) {
+      if (existing.selection case final previous?) {
+        existing.controller.select(previous);
+      }
+      return;
+    }
+    final nextSelection = controller.selection;
+    if (nextSelection?.surfaceId == existing.selection?.surfaceId &&
+        nextSelection?.componentId == existing.selection?.componentId &&
+        nextSelection?.instanceId == existing.selection?.instanceId) {
+      return;
+    }
+    if (existing.controller.hasUnsavedProfileChanges) {
+      existing.prompting = true;
+      // Keep the current editor content in place while the user decides.
+      if (existing.selection case final previous?) {
+        existing.controller.select(previous);
+      }
+      final choice = await showDialog<String>(
+        context: navigator.context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Unsaved appearance changes'),
+          content: const Text(
+            'Save your changes before switching to another component?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop('cancel'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop('discard'),
+              child: const Text('Discard changes'),
+            ),
+            FilledButton(
+              onPressed: existing.controller.canPersist
+                  ? () => Navigator.of(dialogContext).pop('save')
+                  : null,
+              child: const Text('Save changes'),
+            ),
+          ],
+        ),
+      );
+      existing.prompting = false;
+      if (choice == null || choice == 'cancel') return;
+      if (choice == 'save') {
+        try {
+          await existing.controller.save();
+        } catch (error) {
+          if (navigator.mounted) {
+            ScaffoldMessenger.of(navigator.context)
+                .showSnackBar(SnackBar(content: Text('$error')));
+          }
+          return;
+        }
+      } else {
+        existing.controller.discardGalleryChanges();
+        existing.onGalleryChanged?.call();
+      }
+    }
+    if (nextSelection != null) {
+      existing.controller.select(nextSelection);
+      existing.selection = nextSelection;
+    }
+    return;
+  }
+  final session = _OpenStudio(controller, onGalleryChanged);
+  _openStudios[navigator] = session;
   final themes = InheritedTheme.capture(from: context, to: navigator.context);
   Rect? stored;
   try {
@@ -26,21 +108,30 @@ Future<void> showGenUiTouchStudio({
   } on Object {
     // Local layout storage is optional.
   }
-  if (!context.mounted || !navigator.mounted) return;
-  await navigator.push<void>(
-    _TouchStudioRoute(
-      themes: themes,
-      builder: (_) => _FloatingWindow(
-        controller: controller,
-        surfaceId: surfaceId,
-        galleryPreview: galleryPreview,
-        galleryOnly: galleryOnly,
-        onGalleryChanged: onGalleryChanged,
-        initialBounds: stored,
-        boundsPersistence: boundsPersistence,
+  if (!context.mounted || !navigator.mounted) {
+    _openStudios[navigator] = null;
+    return;
+  }
+  try {
+    await navigator.push<void>(
+      _TouchStudioRoute(
+        themes: themes,
+        builder: (_) => _FloatingWindow(
+          controller: controller,
+          surfaceId: surfaceId,
+          galleryPreview: galleryPreview,
+          galleryOnly: galleryOnly,
+          onGalleryChanged: onGalleryChanged,
+          initialBounds: stored,
+          boundsPersistence: boundsPersistence,
+        ),
       ),
-    ),
-  );
+    );
+  } finally {
+    if (identical(_openStudios[navigator], session)) {
+      _openStudios[navigator] = null;
+    }
+  }
 }
 
 final class _TouchStudioRoute extends RawDialogRoute<void> {

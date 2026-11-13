@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
@@ -46,15 +47,24 @@ class GenUiTouchStudio extends StatefulWidget {
 }
 
 class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int tab = 0;
   TouchContract? galleryContract;
+  TouchSelection? _lastSelection;
   double splitFraction = 0.42;
+
+  void _closeDrawer() {
+    if (_scaffoldKey.currentState?.isDrawerOpen == true) {
+      _scaffoldKey.currentState?.closeDrawer();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 520;
+        final collapseTree = constraints.maxWidth < 700;
         final colors = Theme.of(context).colorScheme;
         final toolbarIconStyle = IconButton.styleFrom(
           foregroundColor: colors.onInverseSurface,
@@ -65,6 +75,35 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
         return AnimatedBuilder(
           animation: widget.controller,
           builder: (context, _) => Scaffold(
+            key: _scaffoldKey,
+            drawer: collapseTree
+                ? Drawer(
+                    width: min(360, constraints.maxWidth - 48),
+                    child: SafeArea(
+                      child: Column(
+                        children: [
+                          ListTile(
+                            title: Text(
+                              widget.galleryOnly || tab == 1
+                                  ? 'Component types'
+                                  : 'Components',
+                            ),
+                            trailing: IconButton(
+                              tooltip: 'Close component list',
+                              onPressed: _closeDrawer,
+                              icon: const Icon(Icons.close),
+                            ),
+                          ),
+                          Expanded(
+                            child: widget.galleryOnly || tab == 1
+                                ? _galleryList(showHeading: false)
+                                : _componentList(showHeading: false),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : null,
             appBar: AppBar(
               toolbarHeight: 48,
               backgroundColor: colors.inverseSurface,
@@ -123,6 +162,16 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
                 ),
               ),
               actions: [
+                if (collapseTree)
+                  IconButton(
+                    key: const Key('genui-studio-open-components'),
+                    tooltip: widget.galleryOnly || tab == 1
+                        ? 'Open component types'
+                        : 'Open components',
+                    style: toolbarIconStyle,
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                    icon: const Icon(Icons.menu),
+                  ),
                 if (!compact && !widget.galleryOnly) ...[
                   IconButton(
                     tooltip: 'Undo',
@@ -323,29 +372,6 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
     final role = selected == null
         ? null
         : widget.controller.roleFor?.call(selected, selectedValues);
-    final componentList = ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Components', style: TextStyle(fontSize: 18)),
-        for (final component in surface.componentsModel.all)
-          if (_contractFor(surface, component) case final matching?)
-            ListTile(
-              title: Text(component.type),
-              subtitle: Text(component.id),
-              selected: selected?.componentId == component.id,
-              onTap: () => widget.controller.select(
-                TouchSelection(
-                  surfaceId: surface.id,
-                  componentId: component.id,
-                  catalogId: matching.catalogId,
-                  componentType: component.type,
-                  instanceId: component.id,
-                  dataPath: '',
-                ),
-              ),
-            ),
-      ],
-    );
     final editor = ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -371,7 +397,42 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
           const Text('Select a component to edit its appearance.'),
       ],
     );
-    return _split(componentList, editor);
+    return _split(_componentList(), editor);
+  }
+
+  Widget _componentList({bool showHeading = true}) {
+    final surface = widget.controller.processor.model.getSurface(
+      widget.surfaceId,
+    );
+    if (surface == null) return const SizedBox.shrink();
+    final selected = widget.controller.selection;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (showHeading)
+          const Text('Components', style: TextStyle(fontSize: 18)),
+        for (final component in surface.componentsModel.all)
+          if (_contractFor(surface, component) case final matching?)
+            ListTile(
+              title: Text(component.type),
+              subtitle: Text(component.id),
+              selected: selected?.componentId == component.id,
+              onTap: () {
+                widget.controller.select(
+                  TouchSelection(
+                    surfaceId: surface.id,
+                    componentId: component.id,
+                    catalogId: matching.catalogId,
+                    componentType: component.type,
+                    instanceId: component.id,
+                    dataPath: '',
+                  ),
+                );
+                _closeDrawer();
+              },
+            ),
+      ],
+    );
   }
 
   TouchContract? _contractFor(
@@ -392,6 +453,10 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
   Widget _gallery(BuildContext context) {
     final contracts = widget.controller.contracts.toList();
     final selected = widget.controller.selection;
+    if (!identical(selected, _lastSelection)) {
+      galleryContract = null;
+      _lastSelection = selected;
+    }
     final selectedContract = selected == null
         ? null
         : widget.controller.contractFor(selected);
@@ -422,26 +487,6 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
       }
     }
     displayValues.addAll(defaults);
-    final galleryList = ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          widget.galleryOnly ? 'Component types' : 'Editable components',
-          style: const TextStyle(fontSize: 18),
-        ),
-        for (final contract in contracts)
-          ListTile(
-            title: Text(contract.componentType),
-            subtitle: Text(
-              contract.catalogId,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            selected: identical(contract, current),
-            onTap: () => setState(() => galleryContract = contract),
-          ),
-      ],
-    );
     final editor = ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -498,19 +543,46 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
         ),
       ],
     );
-    return _split(galleryList, editor);
+    return _split(_galleryList(), editor);
+  }
+
+  Widget _galleryList({bool showHeading = true}) {
+    final contracts = widget.controller.contracts.toList();
+    final selected = widget.controller.selection;
+    final current =
+        galleryContract ??
+        (selected == null ? null : widget.controller.contractFor(selected)) ??
+        (contracts.isEmpty ? null : contracts.first);
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (showHeading)
+          Text(
+            widget.galleryOnly ? 'Component types' : 'Editable components',
+            style: const TextStyle(fontSize: 18),
+          ),
+        for (final contract in contracts)
+          ListTile(
+            title: Text(contract.componentType),
+            subtitle: Text(
+              contract.catalogId,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            selected: identical(contract, current),
+            onTap: () {
+              setState(() => galleryContract = contract);
+              _closeDrawer();
+            },
+          ),
+      ],
+    );
   }
 
   Widget _split(Widget left, Widget right) => LayoutBuilder(
     builder: (context, constraints) {
       if (constraints.maxWidth < 700) {
-        return Column(
-          children: [
-            SizedBox(height: constraints.maxHeight * 0.36, child: left),
-            const Divider(height: 1),
-            Expanded(child: right),
-          ],
-        );
+        return right;
       }
       final available = constraints.maxWidth - 12;
       return Row(

@@ -25,6 +25,43 @@ class _MemoryStorage implements TouchStorage {
 }
 
 void main() {
+  testWidgets('narrow editor opens component types in a drawer', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(650, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open GenUI Touch'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Component types'), findsNothing);
+    expect(
+      find.text('Appearance for all NewsSection components'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('genui-studio-open-components')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('genui-studio-open-components')));
+    await tester.pumpAndSettle();
+    expect(find.text('NewsStory'), findsOneWidget);
+
+    await tester.tap(find.text('NewsStory'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Appearance for all NewsStory components'),
+      findsOneWidget,
+    );
+    expect(find.text('Component types'), findsNothing);
+  });
+
   testWidgets('triple-click opens the reader type editor', (tester) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(1400, 900);
