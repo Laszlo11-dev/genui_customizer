@@ -2,6 +2,13 @@
 
 Állapot: 2026-11-13. A használati útmutató a [README.md](README.md), a feltárt dokumentációs és környezeti hibák az [INTEGRATION_NOTES.md](INTEGRATION_NOTES.md) fájlban vannak.
 
+## Mai átadás: demó felület
+
+- A `Touch demo` panel az oldal tetején nyitva indul. Benne van a **User** és az **Occasion** választó, a **Touch**, a **Debug**, valamint Tenant editor esetén a **Save occasion** gomb. A User menü mind a négy személy nevét és angol leírását mutatja; a kiválasztott személy leírása a mezők alatt is látszik.
+- A feedhez tartozó RSS preset, politikai szűrő, keresés, egyéni RSS/Atom URL és Load gomb a nagy cím alatti, alapból zárt lenyíló részben van. A lenyíló fejléc maga a **Live RSS stories · rendered by A2UI** sor; nincs külön kártya vagy „Feed controls” cím.
+- A Touch demo panel belső felső térköze 16 px, hogy a **User** és az **Occasion** mezők lebegő felirata ne vágódjon le. Ez a legutóbbi, még commitolatlan kódmódosítás.
+- A mai commitok: `15d49b6` (Touch színválasztó és típus alapértékek), `731ed02` (User választó és Studio finomítások), `48b1d1f` (occasion konfiguráció és felhasználófüggő mentés). A jelenlegi munkafában a panel térközének javítása és ez a handover-frissítés maradt.
+
 ## Új konfigurációs mentés
 
 - Az occasion választó a remote konfigurációt azonosítja; `auto` esetén a feloldott occasion rekordja töltődik be. A Tenant editor ezt szerkeszti. Joe, Fred és Emily külön local profilt kapnak; a local megjelenés a remote után érvényesül.
@@ -38,13 +45,13 @@
 
 ## Ellenőrzés
 
-- A projekt `.fvm/flutter_sdk` SDK-jával a csomag és a reader `flutter analyze --no-pub` ellenőrzése hibamentes.
-- A csomag tesztjei és a reader teljes tesztkészlete sikeresek (reader: 36 teszt).
-- A reader Windows Release buildje a legutóbbi visszaállítási módosítás után sikeres. A web build a triplaklikk visszaállítása után sikeres volt; a legutóbbi reset módosítás után külön web build nem futott.
-- Élő RSS-forrással végzett interaktív Windows vagy böngészős próbát nem végeztünk. Böngészőben a publikus feedek CORS-szabályai befolyásolják a működést. A web build korábban nem blokkoló CupertinoIcons font figyelmeztetést adott.
+- A projekt `.fvm/flutter_sdk` SDK-jával a csomag és a reader `flutter analyze --no-pub` ellenőrzése a korábbi teljes futásban hibamentes volt. A legutóbbi paneltérköz-módosítás után célzott `dart analyze lib/main.dart` futott, hibamentesen.
+- A csomag tesztjei és a reader teljes tesztkészlete a korábbi futásban sikeresek voltak (reader: 36 teszt). A legutóbbi UI igazítás után nem futott új teljes tesztkészlet.
+- A reader Windows Release buildje a korábbi visszaállítási módosítás után sikeres volt. A web build a triplaklikk visszaállítása után sikeres volt; a legutóbbi panelmódosítás után külön build nem futott.
+- A felhasználó Windows képernyőképeken jelezte a panel elhelyezését és a levágott mezőfeliratokat. Az utolsó térközjavításról még nincs új képernyőkép. Böngészőben a publikus feedek CORS-szabályai befolyásolják a működést. A web build korábban nem blokkoló CupertinoIcons font figyelmeztetést adott.
 
 ## Nyitott korlátok és folytatás
 
 - A rekordok helyiek; a demó user választói nem valódi fiókok, és nincs szinkron.
 - A `hasUnsavedProfileChanges` jelenleg profilobjektum-azonosságot vizsgál. Ha egy felülírást kézzel pontosan a mentett értékre állítanak vissza, a Mentés gomb akkor is aktív maradhat. A mentés tartalma ettől helyes, de a dirty jelzés pontosítható mély összehasonlítással.
-- A jelenlegi változtatások nincsenek commitolva; a munkafájlokat és a korábbi módosításokat meg kell őrizni.
+- A panel belső térközének utolsó javítása és ez a handover-frissítés még nincs commitolva.

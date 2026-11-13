@@ -559,7 +559,7 @@ class _ReaderPageState extends State<ReaderPage>
       key: const Key('touch-demo-panel'),
       initiallyExpanded: true,
       title: const Text('Touch demo'),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       children: [
         Wrap(
           spacing: 12,
