@@ -27,6 +27,7 @@ class GenUiTouchStudio extends StatefulWidget {
     required this.surfaceId,
     this.galleryPreview,
     this.galleryOnly = false,
+    this.colorPalette,
     this.onGalleryChanged,
     this.onMove,
     this.onMoveEnd,
@@ -37,6 +38,9 @@ class GenUiTouchStudio extends StatefulWidget {
   final String surfaceId;
   final TouchGalleryPreview? galleryPreview;
   final bool galleryOnly;
+
+  /// Optional colors offered by color fields. Existing values remain visible.
+  final List<TouchColorSwatch>? colorPalette;
   final VoidCallback? onGalleryChanged;
   final GestureDragUpdateCallback? onMove;
   final VoidCallback? onMoveEnd;
@@ -706,6 +710,7 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
           name: property.name,
           label: property.label,
           value: value is String ? value : null,
+          palette: widget.colorPalette,
           onChanged: (next) => change(property.name, next),
           onReset: onReset,
         );

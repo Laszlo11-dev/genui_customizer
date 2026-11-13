@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'bounds.dart';
+import 'color_field.dart';
 import 'studio.dart';
 import 'touch.dart';
 
@@ -26,6 +27,7 @@ Future<void> showGenUiTouchStudio({
   required String surfaceId,
   TouchGalleryPreview? galleryPreview,
   bool galleryOnly = false,
+  List<TouchColorSwatch>? colorPalette,
   VoidCallback? onGalleryChanged,
   TouchStudioBoundsPersistence? boundsPersistence =
       const SharedPreferencesTouchStudioBoundsPersistence(),
@@ -121,6 +123,7 @@ Future<void> showGenUiTouchStudio({
           surfaceId: surfaceId,
           galleryPreview: galleryPreview,
           galleryOnly: galleryOnly,
+          colorPalette: colorPalette,
           onGalleryChanged: onGalleryChanged,
           initialBounds: stored,
           boundsPersistence: boundsPersistence,
@@ -154,6 +157,7 @@ class _FloatingWindow extends StatefulWidget {
     required this.surfaceId,
     required this.galleryPreview,
     required this.galleryOnly,
+    required this.colorPalette,
     required this.onGalleryChanged,
     required this.initialBounds,
     required this.boundsPersistence,
@@ -163,6 +167,7 @@ class _FloatingWindow extends StatefulWidget {
   final String surfaceId;
   final TouchGalleryPreview? galleryPreview;
   final bool galleryOnly;
+  final List<TouchColorSwatch>? colorPalette;
   final VoidCallback? onGalleryChanged;
   final Rect? initialBounds;
   final TouchStudioBoundsPersistence? boundsPersistence;
@@ -279,6 +284,7 @@ class _FloatingWindowState extends State<_FloatingWindow> {
                         surfaceId: widget.surfaceId,
                         galleryPreview: widget.galleryPreview,
                         galleryOnly: widget.galleryOnly,
+                        colorPalette: widget.colorPalette,
                         onGalleryChanged: widget.onGalleryChanged,
                         onMove: _move,
                         onMoveEnd: _remember,

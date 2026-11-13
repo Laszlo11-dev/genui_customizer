@@ -6,3 +6,4 @@ export 'src/configuration.dart';
 export 'src/studio.dart';
 export 'src/floating_studio.dart';
 export 'src/bounds.dart';
+export 'src/color_field.dart' show TouchColorSwatch;

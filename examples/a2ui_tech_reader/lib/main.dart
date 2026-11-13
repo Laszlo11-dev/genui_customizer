@@ -33,6 +33,22 @@ enum _DemoUser {
   final String description;
 }
 
+// Emily's very serious rule: every offered color is pink.
+const _emilyPalette = <TouchColorSwatch>[
+  TouchColorSwatch('Blush', '#FFF1F2'),
+  TouchColorSwatch('Rosewater', '#FFE4E6'),
+  TouchColorSwatch('Petal', '#FCE7F3'),
+  TouchColorSwatch('Cotton candy', '#FBCFE8'),
+  TouchColorSwatch('Bubblegum', '#F9A8D4'),
+  TouchColorSwatch('Rose', '#FDA4AF'),
+  TouchColorSwatch('Hot pink', '#EC4899'),
+  TouchColorSwatch('Fuchsia', '#D946EF'),
+  TouchColorSwatch('Raspberry', '#DB2777'),
+  TouchColorSwatch('Magenta', '#C026D3'),
+  TouchColorSwatch('Berry', '#BE185D'),
+  TouchColorSwatch('Plum pink', '#9D174D'),
+];
+
 void main() {
   final key = _definedApiKey.isNotEmpty
       ? _definedApiKey
@@ -323,6 +339,7 @@ class _ReaderPageState extends State<ReaderPage>
       controller: _touch,
       surfaceId: NewsA2uiBuilder.surfaceId,
       galleryOnly: true,
+      colorPalette: _demoUser == _DemoUser.emily ? _emilyPalette : null,
       onGalleryChanged: _render,
     );
   }

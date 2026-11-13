@@ -177,6 +177,48 @@ void main() {
     expect(OccasionComposition.fromJson(composition).layout, Occasion.everyday);
   });
 
+  testWidgets('Emily sees only pink choices in the Touch color picker', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('demo-user-picker')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Emily').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open GenUI Touch'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('touch-color-field-backgroundColor')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('touch-color-choice-blush')), findsOneWidget);
+    expect(
+      find.byKey(const Key('touch-color-choice-bubblegum')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('touch-color-choice-indigo')), findsNothing);
+    expect(find.byKey(const Key('touch-color-choice-green')), findsNothing);
+    await tester.tap(find.byKey(const Key('touch-color-choice-blush')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<A2uiSurface>(find.byType(A2uiSurface))
+          .surface
+          .componentsModel
+          .get('root')
+          ?.toJson()['backgroundColor'],
+      '#FFF1F2',
+    );
+  });
+
   testWidgets('NewsPage Gallery color paints and saves the whole page', (
     tester,
   ) async {

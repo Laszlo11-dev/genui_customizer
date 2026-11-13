@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 
+/// A named color offered by the Touch color picker.
+final class TouchColorSwatch {
+  const TouchColorSwatch(this.name, this.hex);
+
+  final String name;
+  final String hex;
+}
+
 /// A compact palette for appearance edits. Existing custom colors remain visible.
-const _palette = <({String name, String hex})>[
-  (name: 'White', hex: '#FFFFFF'),
-  (name: 'Ivory', hex: '#F6F1E8'),
-  (name: 'Charcoal', hex: '#202735'),
-  (name: 'Slate', hex: '#475569'),
-  (name: 'Navy', hex: '#16324F'),
-  (name: 'Blue', hex: '#2563EB'),
-  (name: 'Indigo', hex: '#4F46E5'),
-  (name: 'Purple', hex: '#7C3AED'),
-  (name: 'Pink', hex: '#DB2777'),
-  (name: 'Red', hex: '#DC2626'),
-  (name: 'Orange', hex: '#EA580C'),
-  (name: 'Amber', hex: '#D97706'),
-  (name: 'Lime', hex: '#65A30D'),
-  (name: 'Green', hex: '#15803D'),
-  (name: 'Teal', hex: '#0F766E'),
-  (name: 'Cyan', hex: '#0891B2'),
+const _palette = <TouchColorSwatch>[
+  TouchColorSwatch('White', '#FFFFFF'),
+  TouchColorSwatch('Ivory', '#F6F1E8'),
+  TouchColorSwatch('Charcoal', '#202735'),
+  TouchColorSwatch('Slate', '#475569'),
+  TouchColorSwatch('Navy', '#16324F'),
+  TouchColorSwatch('Blue', '#2563EB'),
+  TouchColorSwatch('Indigo', '#4F46E5'),
+  TouchColorSwatch('Purple', '#7C3AED'),
+  TouchColorSwatch('Pink', '#DB2777'),
+  TouchColorSwatch('Red', '#DC2626'),
+  TouchColorSwatch('Orange', '#EA580C'),
+  TouchColorSwatch('Amber', '#D97706'),
+  TouchColorSwatch('Lime', '#65A30D'),
+  TouchColorSwatch('Green', '#15803D'),
+  TouchColorSwatch('Teal', '#0F766E'),
+  TouchColorSwatch('Cyan', '#0891B2'),
 ];
 
 Color? _colorOf(String? hex) {
@@ -41,6 +49,7 @@ class TouchColorField extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.onReset,
+    this.palette,
   });
 
   final String name;
@@ -48,6 +57,7 @@ class TouchColorField extends StatelessWidget {
   final String? value;
   final ValueChanged<String> onChanged;
   final VoidCallback? onReset;
+  final List<TouchColorSwatch>? palette;
 
   Future<void> _choose(BuildContext context) async {
     final selected = await showDialog<String>(
@@ -72,7 +82,7 @@ class TouchColorField extends StatelessWidget {
                 crossAxisSpacing: 10,
                 childAspectRatio: 1.2,
                 children: [
-                  for (final entry in _palette)
+                  for (final entry in palette ?? _palette)
                     _PaletteChoice(
                       name: entry.name,
                       hex: entry.hex,
@@ -106,7 +116,7 @@ class TouchColorField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = _colorOf(value);
-    final nameOfColor = _palette
+    final nameOfColor = (palette ?? _palette)
         .where((entry) => entry.hex == value?.toUpperCase())
         .map((entry) => entry.name)
         .firstOrNull;
