@@ -108,6 +108,26 @@ class PortalStyle {
   final String headline;
   final String kicker;
   final String heroLabel;
+
+  Map<String, Object?> toJson() => {
+    'accent': accent.toARGB32(),
+    'background': background.toARGB32(),
+    'surface': surface.toARGB32(),
+    'ink': ink.toARGB32(),
+    'headline': headline,
+    'kicker': kicker,
+    'heroLabel': heroLabel,
+  };
+
+  factory PortalStyle.fromJson(Map<String, Object?> json) => PortalStyle(
+    accent: Color(json['accent'] as int),
+    background: Color(json['background'] as int),
+    surface: Color(json['surface'] as int),
+    ink: Color(json['ink'] as int),
+    headline: json['headline'] as String,
+    kicker: json['kicker'] as String,
+    heroLabel: json['heroLabel'] as String,
+  );
 }
 
 PortalStyle styleForAi(AiLayout layout) => PortalStyle(

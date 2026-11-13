@@ -16,11 +16,15 @@ class NewsA2uiBuilder {
     String? error,
     AiLayout? aiLayout,
     String? aiError,
+    OccasionPalette? occasionPalette,
+    OccasionComposition? occasionComposition,
+    String? pageBackgroundColor,
   }) {
     final nodes = <Map<String, Object?>>[];
     final children = <String>[];
     final edition = occasion == Occasion.auto ? Occasion.everyday : occasion;
-    final palette = _palettes[edition]!;
+    final palette = occasionPalette ?? paletteFor(edition);
+    final composition = occasionComposition ?? compositionFor(edition);
 
     void section(
       String id,
@@ -150,7 +154,7 @@ class NewsA2uiBuilder {
         'No stories found',
         'Choose another RSS source or refresh this feed.',
       );
-    } else if (edition == Occasion.askAi && aiLayout == null) {
+    } else if (composition.layout == Occasion.askAi && aiLayout == null) {
       if (aiError == null) {
         status(
           'Ask AI is designing the A2UI layout…',
@@ -162,7 +166,7 @@ class NewsA2uiBuilder {
       }
       grid('ai_grid', all, 2);
     } else {
-      switch (edition) {
+      switch (composition.layout) {
         case Occasion.askAi:
           section(
             'lead',
@@ -182,48 +186,52 @@ class NewsA2uiBuilder {
         case Occasion.everyday:
           section(
             'lead',
-            'THE DAILY EDIT · ${all.length} STORIES',
-            eyebrow: 'Today in technology',
+            '${composition.text('lead')} · ${all.length} STORIES',
+            eyebrow: composition.text('leadEyebrow'),
             banner: true,
           );
           children.add(story(0, variant: 'feature'));
-          section('latest', 'Latest in technology');
-          grid('daily', all.skip(1).toList(), 3);
+          section('latest', composition.text('latest'));
+          grid('daily', all.skip(1).toList(), composition.columns);
         case Occasion.christmas:
           section(
             'lead',
-            'THE HOLIDAY EDIT',
-            eyebrow: '✦ Tech / festive edition',
+            composition.text('lead'),
+            eyebrow: composition.text('leadEyebrow'),
             banner: true,
           );
           final gifts = all
-              .where((i) => _matches(articles[i], _giftTerms))
+              .where((i) => _matches(articles[i], composition.terms))
               .toList();
           if (gifts.isNotEmpty) {
             section(
               'gifts',
-              'Gift ideas from this feed',
-              eyebrow: 'Selected stories',
+              composition.text('group'),
+              eyebrow: composition.text('groupEyebrow'),
             );
-            grid('gifts_grid', gifts, 2, variant: 'feature');
+            grid('gifts_grid', gifts, composition.columns, variant: 'feature');
           }
-          section('holiday_latest', 'More from the feed');
-          grid('holiday', all.where((i) => !gifts.contains(i)).toList(), 2);
+          section('holiday_latest', composition.text('latest'));
+          grid(
+            'holiday',
+            all.where((i) => !gifts.contains(i)).toList(),
+            composition.columns,
+          );
         case Occasion.winter:
           section(
             'lead',
-            'WINTER GAMES / TECH WATCH',
-            eyebrow: '❄ Technology in motion',
+            composition.text('lead'),
+            eyebrow: composition.text('leadEyebrow'),
             banner: true,
           );
           final sports = all
-              .where((i) => _matches(articles[i], _winterTerms))
+              .where((i) => _matches(articles[i], composition.terms))
               .toList();
           if (sports.isNotEmpty) {
-            section('winter_sport', 'Winter sport technology');
-            grid('sport', sports, 2);
+            section('winter_sport', composition.text('group'));
+            grid('sport', sports, composition.columns);
           }
-          section('winter_latest', 'The news wire');
+          section('winter_latest', composition.text('latest'));
           grid(
             'winter',
             all.where((i) => !sports.contains(i)).toList(),
@@ -234,22 +242,31 @@ class NewsA2uiBuilder {
         case Occasion.easter:
           section(
             'lead',
-            'FRESH IDEAS / SPRING EDIT',
-            eyebrow: '✿ New season',
+            composition.text('lead'),
+            eyebrow: composition.text('leadEyebrow'),
             banner: true,
           );
           final spring = all
-              .where((i) => _matches(articles[i], _springTerms))
+              .where((i) => _matches(articles[i], composition.terms))
               .toList();
           if (spring.isNotEmpty) {
-            section('spring', 'Spring discoveries', eyebrow: 'From this feed');
-            grid('spring_cards', spring, 2, variant: 'feature');
+            section(
+              'spring',
+              composition.text('group'),
+              eyebrow: composition.text('groupEyebrow'),
+            );
+            grid(
+              'spring_cards',
+              spring,
+              composition.columns,
+              variant: 'feature',
+            );
           }
-          section('spring_latest', 'Elsewhere in technology');
+          section('spring_latest', composition.text('latest'));
           grid(
             'easter',
             all.where((i) => !spring.contains(i)).toList(),
-            2,
+            composition.columns,
             short: true,
           );
         case Occasion.auto:
@@ -257,9 +274,20 @@ class NewsA2uiBuilder {
       }
     }
     nodes.insert(0, {
-      'id': 'root',
+      'id': 'feed_column',
       'component': 'Column',
       'children': children,
+    });
+    final background =
+        pageBackgroundColor ??
+        aiLayout?.pageColor ??
+        '#${(styleFor(edition).background.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+    nodes.insert(0, {
+      'id': 'root',
+      'component': 'NewsPage',
+      'catalogId': newsGalleryCatalogId,
+      'children': ['feed_column'],
+      'backgroundColor': background,
     });
     return [
       {
@@ -280,36 +308,103 @@ class NewsA2uiBuilder {
     final content = '${item.title} ${item.summary}'.toLowerCase();
     return terms.any(content.contains);
   }
-
-  static const _giftTerms = [
-    'gift',
-    'present',
-    'holiday',
-    'christmas',
-    'headphone',
-    'laptop',
-    'gadget',
-  ];
-  static const _winterTerms = [
-    'ski',
-    'snow',
-    'winter sport',
-    'olympic',
-    'skate',
-    'bobsled',
-  ];
-  static const _springTerms = [
-    'spring',
-    'garden',
-    'solar',
-    'nature',
-    'climate',
-    'outdoor',
-  ];
 }
 
-class _Palette {
-  const _Palette(
+/// The content-independent A2UI arrangement and labels of an occasion.
+class OccasionComposition {
+  const OccasionComposition({
+    required this.layout,
+    required this.labels,
+    this.terms = const [],
+    this.columns = 2,
+  });
+
+  final Occasion layout;
+  final Map<String, String> labels;
+  final List<String> terms;
+  final int columns;
+
+  String text(String key) => labels[key] ?? '';
+
+  Map<String, Object?> toJson() => {
+    'layout': layout.name,
+    'labels': labels,
+    'terms': terms,
+    'columns': columns,
+  };
+
+  factory OccasionComposition.fromJson(Map<String, Object?> json) {
+    final layout = Occasion.values.byName(json['layout'] as String);
+    if (layout == Occasion.auto) {
+      throw const FormatException('Auto is not an occasion composition.');
+    }
+    return OccasionComposition(
+      layout: layout,
+      labels: (json['labels'] as Map).cast<String, String>(),
+      terms: (json['terms'] as List).cast<String>(),
+      columns: json['columns'] as int,
+    );
+  }
+}
+
+OccasionComposition compositionFor(Occasion occasion) => switch (occasion) {
+  Occasion.auto || Occasion.everyday => const OccasionComposition(
+    layout: Occasion.everyday,
+    labels: {
+      'lead': 'THE DAILY EDIT',
+      'leadEyebrow': 'Today in technology',
+      'latest': 'Latest in technology',
+    },
+    columns: 3,
+  ),
+  Occasion.christmas => const OccasionComposition(
+    layout: Occasion.christmas,
+    labels: {
+      'lead': 'THE HOLIDAY EDIT',
+      'leadEyebrow': '✦ Tech / festive edition',
+      'group': 'Gift ideas from this feed',
+      'groupEyebrow': 'Selected stories',
+      'latest': 'More from the feed',
+    },
+    terms: [
+      'gift',
+      'present',
+      'holiday',
+      'christmas',
+      'headphone',
+      'laptop',
+      'gadget',
+    ],
+  ),
+  Occasion.winter => const OccasionComposition(
+    layout: Occasion.winter,
+    labels: {
+      'lead': 'WINTER GAMES / TECH WATCH',
+      'leadEyebrow': '❄ Technology in motion',
+      'group': 'Winter sport technology',
+      'latest': 'The news wire',
+    },
+    terms: ['ski', 'snow', 'winter sport', 'olympic', 'skate', 'bobsled'],
+  ),
+  Occasion.easter => const OccasionComposition(
+    layout: Occasion.easter,
+    labels: {
+      'lead': 'FRESH IDEAS / SPRING EDIT',
+      'leadEyebrow': '✿ New season',
+      'group': 'Spring discoveries',
+      'groupEyebrow': 'From this feed',
+      'latest': 'Elsewhere in technology',
+    },
+    terms: ['spring', 'garden', 'solar', 'nature', 'climate', 'outdoor'],
+  ),
+  Occasion.askAi => const OccasionComposition(
+    layout: Occasion.askAi,
+    labels: {},
+  ),
+};
+
+class OccasionPalette {
+  const OccasionPalette(
     this.accent,
     this.ink,
     this.muted,
@@ -331,10 +426,40 @@ class _Palette {
       bannerInk,
       bannerAccent;
   final int radius;
+
+  Map<String, Object?> toJson() => {
+    'accent': accent,
+    'ink': ink,
+    'muted': muted,
+    'card': card,
+    'feature': feature,
+    'border': border,
+    'banner': banner,
+    'bannerInk': bannerInk,
+    'bannerAccent': bannerAccent,
+    'radius': radius,
+  };
+
+  factory OccasionPalette.fromJson(Map<String, Object?> json) =>
+      OccasionPalette(
+        json['accent'] as String,
+        json['ink'] as String,
+        json['muted'] as String,
+        json['card'] as String,
+        json['feature'] as String,
+        json['border'] as String,
+        json['banner'] as String,
+        json['bannerInk'] as String,
+        json['bannerAccent'] as String,
+        json['radius'] as int,
+      );
 }
 
-const _palettes = <Occasion, _Palette>{
-  Occasion.everyday: _Palette(
+OccasionPalette paletteFor(Occasion occasion) =>
+    _palettes[occasion == Occasion.auto ? Occasion.everyday : occasion]!;
+
+const _palettes = <Occasion, OccasionPalette>{
+  Occasion.everyday: OccasionPalette(
     '#3957D7',
     '#192336',
     '#536079',
@@ -346,7 +471,7 @@ const _palettes = <Occasion, _Palette>{
     '#3957D7',
     18,
   ),
-  Occasion.christmas: _Palette(
+  Occasion.christmas: OccasionPalette(
     '#AB3439',
     '#153C35',
     '#526B62',
@@ -358,7 +483,7 @@ const _palettes = <Occasion, _Palette>{
     '#E8C783',
     20,
   ),
-  Occasion.winter: _Palette(
+  Occasion.winter: OccasionPalette(
     '#1768A0',
     '#122C42',
     '#536C7C',
@@ -370,7 +495,7 @@ const _palettes = <Occasion, _Palette>{
     '#9DDBF5',
     10,
   ),
-  Occasion.easter: _Palette(
+  Occasion.easter: OccasionPalette(
     '#6B779D',
     '#343455',
     '#6B687B',
@@ -382,7 +507,7 @@ const _palettes = <Occasion, _Palette>{
     '#75629A',
     28,
   ),
-  Occasion.askAi: _Palette(
+  Occasion.askAi: OccasionPalette(
     '#6B4BC3',
     '#21203C',
     '#625E78',

@@ -141,7 +141,11 @@ void main() {
     final nodes = update['components'] as List<Map<String, Object?>>;
     expect(nodes.any((node) => node['title'] == 'SUNNY DAYS'), isTrue);
     final root = nodes.firstWhere((node) => node['id'] == 'root');
-    expect(root['children'], contains('story_0'));
+    expect(root['component'], 'NewsPage');
+    expect(root['backgroundColor'], '#FFF7E4');
+    expect(root['children'], contains('feed_column'));
+    final feed = nodes.firstWhere((node) => node['id'] == 'feed_column');
+    expect(feed['children'], contains('story_0'));
     expect(
       nodes.firstWhere((node) => node['id'] == 'story_1')['buttonStyle'],
       'filled',

@@ -13,13 +13,41 @@ const newsGalleryCatalogId =
 final newsGalleryCatalog = CatalogImplementation(
   id: newsGalleryCatalogId,
   protocolVersion: A2uiProtocolVersion.v1_0,
-  components: [_section, _story, _grid],
+  components: [_page, _section, _story, _grid],
 );
 
 final _color = Schema.string();
 final _number = CommonSchemasV1.dynamicNumber;
 final _string = CommonSchemasV1.dynamicString;
 final _boolean = CommonSchemasV1.dynamicBoolean;
+
+/// A2UI root for page-level appearance. The host also reads its resolved
+/// backgroundColor to paint the Flutter shell around the news surface.
+final _page = ComponentImplementation(
+  name: 'NewsPage',
+  schema: Schema.object(
+    properties: {
+      'children': Schema.fromMap({
+        r'$ref': r'common_types.json#/$defs/ChildList',
+      }),
+      'backgroundColor': _color,
+    },
+    required: ['children'],
+  ),
+  builder: (context, node, props, buildChild) {
+    final children = props.children('children');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final child in children)
+          KeyedSubtree(
+            key: NodeKey(child.instanceId),
+            child: buildChild(child),
+          ),
+      ],
+    );
+  },
+);
 
 final _section = ComponentImplementation(
   name: 'NewsSection',

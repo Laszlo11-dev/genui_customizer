@@ -1,6 +1,14 @@
 # Handover: A2UI Tech Reader + GenUI Touch
 
-Állapot: 2026-11-13. Ez az aktuális átadás; a korábbi, Touch és Ask AI előtti handover elavult volt. A használati útmutató a [README.md](README.md), a feltárt dokumentációs és környezeti hibák az [INTEGRATION_NOTES.md](INTEGRATION_NOTES.md) fájlban vannak.
+Állapot: 2026-11-13. A használati útmutató a [README.md](README.md), a feltárt dokumentációs és környezeti hibák az [INTEGRATION_NOTES.md](INTEGRATION_NOTES.md) fájlban vannak.
+
+## Új konfigurációs mentés
+
+- Az occasion választó a remote konfigurációt azonosítja; `auto` esetén a feloldott occasion rekordja töltődik be. A Tenant editor ezt szerkeszti. Joe, Fred és Emily külön local profilt kapnak; a local megjelenés a remote után érvényesül.
+- A remote rekordban a Touch profil mellett az occasion neve, a Flutter shell stílusa, az A2UI paletta, a csoportosítás és feliratok kompozíciója, valamint Ask AI esetén a generált elrendezés és prompt is mentődik. A `Save occasion` a teljes rekordot menti akkor is, ha a Touch mezők nem változtak.
+- A csomag `TouchConfigurationStore` és `TouchLocalConfigurationStore` API-kat ad, alapértelmezett helyi tárolókkal. Az egyprofilos `TouchStorage` kompatibilitási út megmaradt. A régi reader profil az Everyday remote rekord kiinduló profilja, amíg nincs új formátumú mentés.
+- User vagy occasion váltáskor a reader a nem mentett Touch változások mentését, eldobását vagy a váltás megszakítását kínálja.
+- A nyitva induló Touch demo panel három local mintarekordot hoz létre az első használatkor: Joe fehér oldalhátteret, nagyobb szöveget, erős kontrasztot és egysávos hírfolyamot kap; Emily rózsaszín oldalhátteret és komponenseket; Fred felülírás nélkül az occasion remote megjelenését látja. Régebbi mintarekordok egyszer kapják meg az új oldalhátteret; a korábbi szerkesztéseik megmaradnak.
 
 ## Feladathatár és jelenlegi működés
 
@@ -11,12 +19,12 @@
 
 ## Touch integráció
 
-- A reader egy `GenUiTouchController` példányt és egy tartós `MessageProcessor` példányt tart fenn. Az első felület létrehozása előtt betölti a profilt; minden új A2UI üzenet a `processAgentMessages` útvonalon érkezik. Frissítéskor csak a felület törlődik és épül újra.
+- A reader egy `GenUiTouchController` példányt és egy tartós `MessageProcessor` példányt tart fenn. Az első felület létrehozása előtt betölti a remote és local konfigurációt; minden új A2UI üzenet a `processAgentMessages` útvonalon érkezik. Frissítéskor csak a felület törlődik és épül újra.
 - A `newsGalleryCatalog` dekorált, így az app sávjának Touch gombja mellett az asztali **triplaklikk** és az érintéses **hosszan nyomás** is megnyitja a Studiot. A megérintett komponens típusa lesz kiválasztva. A Story Gridbe ágyazva is helyesen működik.
-- A Studio `galleryOnly` módban nyílik. Csak a **NewsSection, NewsStory és NewsGrid típust** szerkeszti, nincs külön kártyánkénti szerkesztés vagy kijelölési keret. Egy módosítás az aktuális felület minden azonos típusú elemén rögtön megjelenik, és a későbbi felületfrissítésekre is érvényes.
+- A Studio `galleryOnly` módban nyílik. A **NewsPage** az oldal teljes háttérszínét, a **NewsSection, NewsStory és NewsGrid** a komponensek megjelenését szerkeszti. Nincs külön kártyánkénti szerkesztés vagy kijelölési keret. Egy módosítás rögtön megjelenik, és a későbbi felületfrissítésekre is érvényes.
 - A színekhez saját, 16 színű választó van. A mező megmutatja a tényleges színt; a palettán kívüli korábban mentett szín is látható, de új választás csak a palettáról történik.
 - A módosított mező melletti reset ikon, a színválasztó **Use original** gombja és a **Restore original [type] appearance** törli a megfelelő típus alapérték-felülírását. Így az aktuális alkalom vagy AI-elrendezés által generált érték tér vissza. A **Discard unsaved defaults** más művelet: a legutóbb mentett profilt állítja vissza.
-- A **Save profile** a típusalapértékeket és a visszaállításokat `shared_preferences` tárolóba menti, helyben, ezen az alkalmazástelepítésen. Régi profilok típusalapértékei megmaradnak; régi, egyedi elemekhez kötött role override-ok betöltéskor kimaradnak.
+- A **Save profile** a jelenleg szerkesztett remote vagy local réteg típusalapértékeit menti `shared_preferences` tárolóba. Régi profilok típusalapértékei megmaradnak; régi, egyedi elemekhez kötött role override-ok betöltéskor kimaradnak.
 
 ## Fontos fájlok
 
@@ -25,18 +33,18 @@
 - `lib/news_gallery.dart`, `lib/a2ui_builder.dart`: A2UI komponensek és az alkalmi kompozíciók.
 - `../../lib/src/touch.dart`: típuspreferenciák, egy mező vagy teljes típus felülírásának törlése, triplaklikk.
 - `../../lib/src/studio.dart`, `../../lib/src/color_field.dart`: típusszintű szerkesztő, visszaállító gombok és színválasztó.
-- `test/news_touch_test.dart`: triplaklikk, típusalapértékek, mentés, visszaállítás és régi profil ellenőrzése.
+- `test/news_touch_test.dart`: triplaklikk, típusalapértékek, occasion mentés, visszaállítás és régi profil ellenőrzése.
 - `../../skills/genui-customizer-integration/SKILL.md`: általános Touch integrációs lépések.
 
 ## Ellenőrzés
 
 - A projekt `.fvm/flutter_sdk` SDK-jával a csomag és a reader `flutter analyze --no-pub` ellenőrzése hibamentes.
-- A csomag tesztjei és a reader teljes tesztkészlete sikeresek (reader: 29 teszt).
+- A csomag tesztjei és a reader teljes tesztkészlete sikeresek (reader: 36 teszt).
 - A reader Windows Release buildje a legutóbbi visszaállítási módosítás után sikeres. A web build a triplaklikk visszaállítása után sikeres volt; a legutóbbi reset módosítás után külön web build nem futott.
 - Élő RSS-forrással végzett interaktív Windows vagy böngészős próbát nem végeztünk. Böngészőben a publikus feedek CORS-szabályai befolyásolják a működést. A web build korábban nem blokkoló CupertinoIcons font figyelmeztetést adott.
 
 ## Nyitott korlátok és folytatás
 
-- A profil helyi, nincs felhasználói fiókhoz kötés vagy szinkron.
+- A rekordok helyiek; a demó user választói nem valódi fiókok, és nincs szinkron.
 - A `hasUnsavedProfileChanges` jelenleg profilobjektum-azonosságot vizsgál. Ha egy felülírást kézzel pontosan a mentett értékre állítanak vissza, a Mentés gomb akkor is aktív maradhat. A mentés tartalma ettől helyes, de a dirty jelzés pontosítható mély összehasonlítással.
 - A jelenlegi változtatások nincsenek commitolva; a munkafájlokat és a korábbi módosításokat meg kell őrizni.

@@ -174,6 +174,11 @@ final class GenUiTouchController extends ChangeNotifier {
   MessageProcessor<ComponentImplementation>? _processor;
   TouchProfile _savedProfile;
   TouchProfile _profile;
+  TouchProfile _remoteProfile = const TouchProfile();
+  TouchProfile _localProfile = const TouchProfile();
+  bool _editingRemote = false;
+  Future<void> Function(TouchProfile)? _configurationSaver;
+  String? _configurationLabel;
   TouchSelection? _selection;
   final List<_LocalEdit> _undo = [];
   final List<_LocalEdit> _redo = [];
@@ -193,9 +198,34 @@ final class GenUiTouchController extends ChangeNotifier {
   int get revision => _revision;
   bool get canUndo => _undo.isNotEmpty;
   bool get canRedo => _redo.isNotEmpty;
-  bool get canPersist => storage != null;
+  bool get canPersist => storage != null || _configurationSaver != null;
   bool get hasUnsavedProfileChanges => !identical(_profile, _savedProfile);
+  String? get configurationLabel => _configurationLabel;
   Iterable<TouchContract> get contracts => _contracts.values;
+
+  /// Selects independent remote and local appearance layers for one context.
+  /// The selected layer is edited and saved; the other layer remains untouched.
+  /// The host loads and validates full occasion data separately, then supplies
+  /// its profile and a saver for the selected configuration record.
+  void useConfigurations({
+    required TouchProfile remote,
+    required TouchProfile local,
+    required bool editRemote,
+    required Future<void> Function(TouchProfile) saveEditedProfile,
+    String? label,
+  }) {
+    _remoteProfile = remote;
+    _localProfile = local;
+    _editingRemote = editRemote;
+    _configurationSaver = saveEditedProfile;
+    _configurationLabel = label;
+    _profile = editRemote ? remote : local;
+    _savedProfile = _profile;
+    _undo.clear();
+    _redo.clear();
+    _revision++;
+    notifyListeners();
+  }
 
   void attachProcessor(MessageProcessor<ComponentImplementation> value) {
     if (_processor != null) {
@@ -491,6 +521,14 @@ final class GenUiTouchController extends ChangeNotifier {
   }
 
   Future<void> save() async {
+    final configurationSaver = _configurationSaver;
+    if (configurationSaver != null) {
+      final saving = _profile;
+      await configurationSaver(saving);
+      _savedProfile = saving;
+      notifyListeners();
+      return;
+    }
     final destination =
         storage ??
         (throw StateError('The host has not configured TouchStorage.'));
@@ -531,10 +569,21 @@ final class GenUiTouchController extends ChangeNotifier {
       dataPath: '',
     );
     final role = roleFor?.call(selected, definition);
-    final overrides = {
-      ...?_profile.defaults[_typeKey(catalog, type)],
-      if (role != null) ...?_profile.roles[_roleKey(catalog, type, role)],
+    Map<String, Object?> rules(TouchProfile profile) => {
+      ...?profile.defaults[_typeKey(catalog, type)],
+      if (role != null) ...?profile.roles[_roleKey(catalog, type, role)],
     };
+    final remote = _configurationSaver == null
+        ? const TouchProfile()
+        : _editingRemote
+        ? _profile
+        : _remoteProfile;
+    final local = _configurationSaver == null
+        ? _profile
+        : _editingRemote
+        ? _localProfile
+        : _profile;
+    final overrides = {...rules(remote), ...rules(local)};
     for (final entry in overrides.entries) {
       if (contract.properties[entry.key]?.accepts(entry.value) == true &&
           !_isExpression(component[entry.key])) {

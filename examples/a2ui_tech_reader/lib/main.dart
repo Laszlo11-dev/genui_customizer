@@ -15,7 +15,9 @@ import 'news_gallery.dart';
 import 'news_touch.dart';
 import 'news_filter.dart';
 import 'rss_service.dart';
-import 'runtime_key_stub.dart' if (dart.library.io) 'runtime_key_io.dart' as runtime_key;
+import 'runtime_key_stub.dart'
+    if (dart.library.io) 'runtime_key_io.dart'
+    as runtime_key;
 
 const _definedApiKey = String.fromEnvironment('GEMINI_API_KEY');
 
@@ -56,7 +58,8 @@ class ReaderPage extends StatefulWidget {
   State<ReaderPage> createState() => _ReaderPageState();
 }
 
-class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateMixin {
+class _ReaderPageState extends State<ReaderPage>
+    with SingleTickerProviderStateMixin {
   final _rss = RssService();
   GeminiLayoutService? _aiService;
   AiLayout? _aiLayout;
@@ -67,7 +70,17 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
   final _searchController = TextEditingController();
   late MessageProcessor<ComponentImplementation> _processor;
   late final GenUiTouchController _touch;
+  final TouchConfigurationStore _remoteStore =
+      const SharedPreferencesTouchRemoteStore();
+  final TouchLocalConfigurationStore _localStore =
+      const SharedPreferencesTouchLocalStore();
+  late final Future<void> _seedUsers;
+  TouchConfiguration? _remoteConfiguration;
+  PortalStyle? _occasionStyle;
+  OccasionPalette? _occasionPalette;
+  OccasionComposition? _occasionComposition;
   bool _touchReady = false;
+  bool _hasSavedAiLayout = false;
   SurfaceModel<ComponentImplementation>? _surface;
   Occasion _occasion = Occasion.auto;
   _DemoUser _demoUser = _DemoUser.tenantEditor;
@@ -99,7 +112,9 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
       reverseDuration: const Duration(milliseconds: 170),
       value: 1,
     );
-    _feedOpacity = _feedTransition.drive(CurveTween(curve: Curves.easeOutCubic));
+    _feedOpacity = _feedTransition.drive(
+      CurveTween(curve: Curves.easeOutCubic),
+    );
     _feedOffset = _feedTransition.drive(
       Tween<Offset>(
         begin: const Offset(0, 0.025),
@@ -108,18 +123,22 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
     );
     _touch = GenUiTouchController(
       contracts: readerTouchContracts(),
-      storage: const ReaderTouchStorage(),
       showSelectionOutline: false,
     );
     _touch.onStudioRequested = _openTouchStudio;
     _processor = _newProcessor();
     _touch.attachProcessor(_processor);
+    _seedUsers = seedDemoLocalConfigurations(_localStore).catchError((
+      Object error,
+    ) {
+      debugPrint('Could not seed demo users: $error');
+    });
     _initializeTouch();
   }
 
   Future<void> _initializeTouch() async {
     try {
-      await _touch.load();
+      await _loadConfigurationContext();
     } catch (error) {
       // A damaged local profile must not prevent the news feed from loading.
       debugPrint('Could not load Touch appearance: $error');
@@ -128,6 +147,173 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
     _touchReady = true;
     _render();
     _refresh();
+    try {
+      final available =
+          (await _remoteStore.load(Occasion.askAi.name))?.data['aiLayout']
+              is Map;
+      if (mounted) setState(() => _hasSavedAiLayout = available);
+    } catch (error) {
+      debugPrint('Could not load saved AI occasion: $error');
+    }
+  }
+
+  Map<String, Object?> _occasionData(Occasion edition) => {
+    'occasion': edition.name,
+    'style':
+        (edition == Occasion.askAi && _aiLayout != null
+                ? styleForAi(_aiLayout!)
+                : (_occasionStyle ?? styleFor(edition)))
+            .toJson(),
+    'palette': (_occasionPalette ?? paletteFor(edition)).toJson(),
+    'composition': (_occasionComposition ?? compositionFor(edition)).toJson(),
+    if (edition == Occasion.askAi && _aiLayout != null)
+      'aiLayout': _aiLayout!.toJson(),
+    if (edition == Occasion.askAi) 'aiPrompt': _aiPrompt,
+  };
+
+  Future<bool> _loadConfigurationContext() async {
+    final edition = _active;
+    final user = _demoUser;
+    final storedRemote = await _remoteStore.load(edition.name);
+    final legacyProfile = storedRemote == null && edition == Occasion.everyday
+        ? await const ReaderTouchStorage().load()
+        : null;
+    final remote =
+        storedRemote ??
+        TouchConfiguration(
+          id: edition.name,
+          name: edition.label,
+          profile: legacyProfile ?? const TouchProfile(),
+          data: {
+            'occasion': edition.name,
+            'style': styleFor(edition).toJson(),
+            'palette': paletteFor(edition).toJson(),
+            'composition': compositionFor(edition).toJson(),
+          },
+        );
+    final local = user == _DemoUser.tenantEditor
+        ? null
+        : await _localStore.load(user.name, 'preferences');
+    if (!mounted || edition != _active || user != _demoUser) return false;
+    final data = remote.data;
+    _remoteConfiguration = remote;
+    _occasionStyle = data['style'] is Map
+        ? PortalStyle.fromJson((data['style'] as Map).cast<String, Object?>())
+        : styleFor(edition);
+    _occasionPalette = data['palette'] is Map
+        ? OccasionPalette.fromJson(
+            (data['palette'] as Map).cast<String, Object?>(),
+          )
+        : paletteFor(edition);
+    _occasionComposition = data['composition'] is Map
+        ? OccasionComposition.fromJson(
+            (data['composition'] as Map).cast<String, Object?>(),
+          )
+        : compositionFor(edition);
+    if (edition == Occasion.askAi && data['aiLayout'] is Map) {
+      _aiLayout = AiLayout.fromJson(
+        (data['aiLayout'] as Map).cast<String, Object?>(),
+      );
+      _aiPrompt = data['aiPrompt'] as String? ?? _aiPrompt;
+    }
+    _touch.useConfigurations(
+      remote: remote.profile,
+      local: local?.profile ?? const TouchProfile(),
+      editRemote: user == _DemoUser.tenantEditor,
+      label: user == _DemoUser.tenantEditor
+          ? 'Remote: ${remote.name}'
+          : 'Local: ${user.label}',
+      saveEditedProfile: (profile) async {
+        if (user == _DemoUser.tenantEditor) {
+          final updated = remote.copyWith(
+            profile: profile,
+            data: _occasionData(edition),
+          );
+          await _remoteStore.save(updated);
+          _remoteConfiguration = updated;
+        } else {
+          await _localStore.save(
+            user.name,
+            (local ??
+                    TouchConfiguration(
+                      id: 'preferences',
+                      name: '${user.label} preferences',
+                      userId: user.name,
+                      profile: const TouchProfile(),
+                    ))
+                .copyWith(profile: profile),
+          );
+        }
+      },
+    );
+    return true;
+  }
+
+  Future<bool> _resolveUnsavedConfiguration() async {
+    if (!_touch.hasUnsavedProfileChanges) return true;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved appearance changes'),
+        content: const Text('Save changes before switching configuration?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (action == 'save') {
+      await _touch.save();
+      return true;
+    }
+    return action == 'discard';
+  }
+
+  Future<void> _changeDemoUser(_DemoUser? user) async {
+    if (user == null || user == _demoUser) return;
+    if (!await _resolveUnsavedConfiguration() || !mounted) return;
+    await _seedUsers;
+    if (!mounted) return;
+    setState(() => _demoUser = user);
+    if (await _loadConfigurationContext() && mounted) _render();
+  }
+
+  Future<void> _saveOccasion() async {
+    final remote = _remoteConfiguration;
+    if (remote == null) return;
+    try {
+      if (_touch.hasUnsavedProfileChanges) {
+        await _touch.save();
+      } else {
+        final updated = remote.copyWith(data: _occasionData(_active));
+        await _remoteStore.save(updated);
+        _remoteConfiguration = updated;
+      }
+      if (mounted) {
+        if (_active == Occasion.askAi && _aiLayout != null) {
+          setState(() => _hasSavedAiLayout = true);
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Occasion saved')));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save occasion: $error')),
+        );
+      }
+    }
   }
 
   void _openTouchStudio() {
@@ -183,6 +369,11 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
       error: _error,
       aiLayout: _aiLayout,
       aiError: _aiError,
+      occasionPalette: _occasionPalette,
+      occasionComposition: _occasionComposition,
+      pageBackgroundColor: _active == Occasion.askAi && _aiLayout != null
+          ? _aiLayout!.pageColor
+          : _hex(_occasionStyle?.background ?? styleFor(_active).background),
     );
     _surface = null;
     try {
@@ -194,6 +385,21 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
     } catch (e) {
       setState(() => _error = 'A2UI renderer: $e');
     }
+  }
+
+  String _hex(Color color) =>
+      '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  Color _pageBackground(PortalStyle fallback) {
+    final value = _surface?.componentsModel
+        .get('root')
+        ?.toJson()['backgroundColor'];
+    if (value is! String) return fallback.background;
+    final hex = value.replaceFirst('#', '');
+    if (!RegExp(r'^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$').hasMatch(hex)) {
+      return fallback.background;
+    }
+    return Color(int.parse(hex.length == 6 ? 'FF$hex' : hex, radix: 16));
   }
 
   Future<void> _refresh() async {
@@ -235,9 +441,12 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
 
   Future<void> _changeOccasion(Occasion? value) async {
     if (value == null || value == _occasion) return;
-    if (value == Occasion.askAi && _aiService == null) return;
+    if (value == Occasion.askAi && _aiService == null && !_hasSavedAiLayout) {
+      return;
+    }
+    if (!await _resolveUnsavedConfiguration() || !mounted) return;
     String? prompt;
-    if (value == Occasion.askAi) {
+    if (value == Occasion.askAi && !_hasSavedAiLayout) {
       prompt = await _editAiPrompt();
       if (!mounted || prompt == null) return;
     }
@@ -248,7 +457,11 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
       _aiError = null;
     });
     ++_aiRequestId;
-    if (prompt != null) _generateAiLayout(prompt);
+    if (!await _loadConfigurationContext() || !mounted) return;
+    if (prompt != null) {
+      _aiPrompt = prompt;
+      _generateAiLayout(prompt);
+    }
     if (_active == previous) return;
     final changeId = ++_occasionChangeId;
     try {
@@ -302,7 +515,9 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
         .where((article) {
           if (_hidePolitical && isPoliticalNews(article)) return false;
           return query.isEmpty ||
-              '${article.title} ${article.summary} ${article.source}'.toLowerCase().contains(query);
+              '${article.title} ${article.summary} ${article.source}'
+                  .toLowerCase()
+                  .contains(query);
         })
         .take(24)
         .toList();
@@ -327,7 +542,9 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  child: SelectableText(const JsonEncoder.withIndent('  ').convert(_messages)),
+                  child: SelectableText(
+                    const JsonEncoder.withIndent('  ').convert(_messages),
+                  ),
                 ),
               ),
             ],
@@ -363,7 +580,10 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                 ),
                 selectedItemBuilder: (context) => [
                   for (final user in _DemoUser.values)
-                    Align(alignment: Alignment.centerLeft, child: Text(user.label)),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(user.label),
+                    ),
                 ],
                 items: _DemoUser.values
                     .map(
@@ -373,7 +593,12 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(user.label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              user.label,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             Text(
                               user.description,
                               maxLines: 2,
@@ -385,9 +610,7 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                       ),
                     )
                     .toList(),
-                onChanged: (user) {
-                  if (user != null) setState(() => _demoUser = user);
-                },
+                onChanged: _changeDemoUser,
               ),
             ),
             SizedBox(
@@ -401,7 +624,10 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                   isDense: true,
                 ),
                 items: Occasion.values.map((o) {
-                  final locked = o == Occasion.askAi && _aiService == null;
+                  final locked =
+                      o == Occasion.askAi &&
+                      _aiService == null &&
+                      !_hasSavedAiLayout;
                   final disabledColor = Theme.of(context).disabledColor;
                   return DropdownMenuItem(
                     value: o,
@@ -410,9 +636,16 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                         ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.lock_outline, size: 16, color: disabledColor),
+                              Icon(
+                                Icons.lock_outline,
+                                size: 16,
+                                color: disabledColor,
+                              ),
                               const SizedBox(width: 8),
-                              Text(o.label, style: TextStyle(color: disabledColor)),
+                              Text(
+                                o.label,
+                                style: TextStyle(color: disabledColor),
+                              ),
                             ],
                           )
                         : Text(o.label),
@@ -429,6 +662,12 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                 label: const Text('Touch'),
               ),
             ),
+            if (_demoUser == _DemoUser.tenantEditor)
+              OutlinedButton.icon(
+                onPressed: _touchReady ? _saveOccasion : null,
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save occasion'),
+              ),
             OutlinedButton.icon(
               onPressed: _showJson,
               icon: const Icon(Icons.data_object),
@@ -437,9 +676,117 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
           ],
         ),
         const SizedBox(height: 12),
-        Align(alignment: Alignment.centerLeft, child: Text(_demoUser.description)),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(_demoUser.description),
+        ),
       ],
     ),
+  );
+
+  Widget _buildFeedControlsPanel(Color ink) => ExpansionTile(
+    key: const Key('feed-controls-panel'),
+    initiallyExpanded: false,
+    minTileHeight: 40,
+    tilePadding: EdgeInsets.zero,
+    childrenPadding: const EdgeInsets.only(top: 8, bottom: 12),
+    shape: const Border(),
+    collapsedShape: const Border(),
+    iconColor: ink.withValues(alpha: 0.7),
+    collapsedIconColor: ink.withValues(alpha: 0.7),
+    title: Text(
+      'Live RSS stories · rendered by A2UI',
+      style: TextStyle(color: ink.withValues(alpha: 0.7)),
+    ),
+    children: [
+      Wrap(
+        spacing: 12,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 220,
+            child: DropdownButtonFormField<String>(
+              isExpanded: true,
+              key: ValueKey(_source),
+              initialValue: feedPresets.any((p) => p.name == _source)
+                  ? _source
+                  : null,
+              decoration: const InputDecoration(
+                labelText: 'RSS preset',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: feedPresets
+                  .map(
+                    (p) => DropdownMenuItem(value: p.name, child: Text(p.name)),
+                  )
+                  .toList(),
+              onChanged: _choosePreset,
+            ),
+          ),
+          Tooltip(
+            message:
+                'Uses feed tags and clear title signals. Technology policy stays visible.',
+            child: FilterChip(
+              selected: _hidePolitical,
+              label: const Text('Hide politics & war'),
+              onSelected: (value) {
+                setState(() => _hidePolitical = value);
+                _render();
+              },
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _searchController,
+        onChanged: (_) {
+          _render();
+        },
+        decoration: const InputDecoration(
+          labelText: 'Search stories',
+          prefixIcon: Icon(Icons.search),
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _sourceController,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'Custom RSS / Atom URL',
+                hintText: 'https://example.com/feed.xml',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onSubmitted: (_) => _refresh(),
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton.icon(
+            onPressed: _loading ? null : _refresh,
+            icon: const Icon(Icons.rss_feed),
+            label: const Text('Load'),
+          ),
+        ],
+      ),
+      const SizedBox(height: 14),
+      if (_occasion == Occasion.askAi)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _retryAiLayout,
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Edit AI prompt'),
+          ),
+        ),
+    ],
   );
 
   @override
@@ -459,25 +806,38 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final layout = _active == Occasion.askAi ? _aiLayout : null;
-    final style = layout == null ? styleFor(_active) : styleForAi(layout);
+    final style = layout == null
+        ? (_occasionStyle ?? styleFor(_active))
+        : styleForAi(layout);
+    final pageBackground = _pageBackground(style);
+    final pageInk = pageBackground == style.background
+        ? style.ink
+        : pageBackground.computeLuminance() < 0.18
+        ? Colors.white
+        : const Color(0xFF192336);
     final theme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: style.accent,
         surface: style.surface,
-        brightness: style.ink == Colors.white ? Brightness.dark : Brightness.light,
+        brightness: pageInk == Colors.white
+            ? Brightness.dark
+            : Brightness.light,
       ),
-      scaffoldBackgroundColor: style.background,
-      textTheme: ThemeData.light().textTheme.apply(bodyColor: style.ink, displayColor: style.ink),
+      scaffoldBackgroundColor: pageBackground,
+      textTheme: ThemeData.light().textTheme.apply(
+        bodyColor: pageInk,
+        displayColor: pageInk,
+      ),
       cardTheme: CardThemeData(
         color: style.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          side: BorderSide(color: style.ink.withValues(alpha: 0.09)),
+          side: BorderSide(color: pageInk.withValues(alpha: 0.09)),
           borderRadius: BorderRadius.circular(18),
         ),
       ),
-      appBarTheme: AppBarTheme(backgroundColor: style.background),
+      appBarTheme: AppBarTheme(backgroundColor: pageBackground),
     );
     return AnimatedTheme(
       data: theme,
@@ -491,7 +851,11 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
               const SizedBox(width: 10),
               const Text(
                 'A2UI / TECH READER',
-                style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.3, fontSize: 17),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.3,
+                  fontSize: 17,
+                ),
               ),
             ],
           ),
@@ -512,13 +876,15 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
               children: [
                 const SizedBox(height: 12),
                 _buildTouchDemoPanel(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 380),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
-                  layoutBuilder: (current, previous) =>
-                      Stack(alignment: Alignment.centerLeft, children: [...previous, ?current]),
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [...previous, ?current],
+                  ),
                   transitionBuilder: (child, animation) => FadeTransition(
                     opacity: animation,
                     child: SlideTransition(
@@ -549,101 +915,13 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                           fontWeight: FontWeight.w900,
                           fontSize: 46,
                           letterSpacing: -1.8,
-                          color: style.ink,
+                          color: pageInk,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Live RSS stories · rendered by A2UI',
-                        style: TextStyle(color: style.ink.withValues(alpha: 0.7)),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 26),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 220,
-                      child: DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        key: ValueKey(_source),
-                        initialValue: feedPresets.any((p) => p.name == _source) ? _source : null,
-                        decoration: const InputDecoration(
-                          labelText: 'RSS preset',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        items: feedPresets
-                            .map((p) => DropdownMenuItem(value: p.name, child: Text(p.name)))
-                            .toList(),
-                        onChanged: _choosePreset,
-                      ),
-                    ),
-                    Tooltip(
-                      message:
-                          'Uses feed tags and clear title signals. Technology policy stays visible.',
-                      child: FilterChip(
-                        selected: _hidePolitical,
-                        label: const Text('Hide politics & war'),
-                        onSelected: (value) {
-                          setState(() => _hidePolitical = value);
-                          _render();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _searchController,
-                  onChanged: (_) {
-                    _render();
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Search stories',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _sourceController,
-                        keyboardType: TextInputType.url,
-                        decoration: const InputDecoration(
-                          labelText: 'Custom RSS / Atom URL',
-                          hintText: 'https://example.com/feed.xml',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        onSubmitted: (_) => _refresh(),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    FilledButton.icon(
-                      onPressed: _loading ? null : _refresh,
-                      icon: const Icon(Icons.rss_feed),
-                      label: const Text('Load'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                if (_occasion == Occasion.askAi)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: _retryAiLayout,
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit AI prompt'),
-                    ),
-                  ),
+                _buildFeedControlsPanel(pageInk),
                 const SizedBox(height: 16),
                 // The article cards, headings, actions, and occasion-specific
                 // content below are produced by the official A2UI renderer.
@@ -652,7 +930,10 @@ class _ReaderPageState extends State<ReaderPage> with SingleTickerProviderStateM
                   child: SlideTransition(
                     position: _feedOffset,
                     child: _surface != null
-                        ? A2uiSurface(key: ObjectKey(_surface), surface: _surface!)
+                        ? A2uiSurface(
+                            key: ObjectKey(_surface),
+                            surface: _surface!,
+                          )
                         : const Padding(
                             padding: EdgeInsets.all(16),
                             child: Text('Loading A2UI surface…'),
@@ -715,7 +996,10 @@ class _AiPromptDialogState extends State<_AiPromptDialog> {
       ),
     ),
     actions: [
-      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
       FilledButton(
         onPressed: () {
           final value = _controller.text.trim();

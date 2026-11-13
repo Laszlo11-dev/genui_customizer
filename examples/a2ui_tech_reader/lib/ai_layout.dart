@@ -45,6 +45,30 @@ class AiLayout {
   final int imageHeight;
   final String buttonStyle;
 
+  Map<String, Object?> toJson() => {
+    'bannerColor': bannerColor,
+    'accentColor': accentColor,
+    'cardColor': cardColor,
+    'borderColor': borderColor,
+    'columns': columns,
+    'gap': gap,
+    'cornerRadius': cornerRadius,
+    'imagePosition': imagePosition,
+    'pageColor': pageColor,
+    'surfaceColor': surfaceColor,
+    'headline': headline,
+    'kicker': kicker,
+    'bannerTitle': bannerTitle,
+    'bannerEyebrow': bannerEyebrow,
+    'layoutStyle': layoutStyle,
+    'cardTitleSize': cardTitleSize,
+    'imageHeight': imageHeight,
+    'buttonStyle': buttonStyle,
+  };
+
+  factory AiLayout.fromJson(Map<String, Object?> json) =>
+      parse(jsonEncode(json));
+
   static AiLayout parse(String text) {
     final data = jsonDecode(text);
     if (data is! Map<String, dynamic>) {

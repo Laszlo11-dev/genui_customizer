@@ -36,6 +36,42 @@ void main() {
     expect(trees.toSet().length, 4);
   });
 
+  test('saved composition restores grouping and headings', () {
+    const custom = OccasionComposition(
+      layout: Occasion.christmas,
+      labels: {
+        'lead': 'Custom holiday',
+        'leadEyebrow': 'A seasonal edition',
+        'group': 'Picked stories',
+        'groupEyebrow': 'For this feed',
+        'latest': 'Everything else',
+      },
+      terms: ['story 2'],
+      columns: 2,
+    );
+    final restored = OccasionComposition.fromJson(custom.toJson());
+    final update =
+        NewsA2uiBuilder.build(
+              items,
+              Occasion.christmas,
+              occasionComposition: restored,
+            ).last['updateComponents']
+            as Map<String, Object?>;
+    final nodes = update['components'] as List<Map<String, Object?>>;
+    expect(
+      nodes.firstWhere((node) => node['id'] == 'lead')['title'],
+      'Custom holiday',
+    );
+    expect(
+      nodes.firstWhere((node) => node['id'] == 'gifts')['title'],
+      'Picked stories',
+    );
+    expect(
+      nodes.firstWhere((node) => node['id'] == 'holiday_latest')['title'],
+      'Everything else',
+    );
+  });
+
   test('occasion changes gallery presentation properties', () {
     Map<String, Object?> lead(Occasion occasion) {
       final update =

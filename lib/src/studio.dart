@@ -375,6 +375,11 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
     final editor = ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (widget.controller.configurationLabel case final label?)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+          ),
         if (contract != null && selected != null) ...[
           Text(
             '${selected.componentType} · ${selected.componentId}',
