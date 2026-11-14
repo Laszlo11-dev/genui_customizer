@@ -90,6 +90,35 @@ void main() {
     expect(stories.last.summary.toLowerCase(), contains('winter games'));
   });
 
+  testWidgets('curated demo feed can be selected outside the tour', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('feed-settings-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(demoFeedPreset.name).last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Curated RSS snapshot'), findsWidgets);
+    expect(find.textContaining('The links open the original articles.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Close RSS controls'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining(demoRssStories().first.title), findsWidgets);
+    expect(find.text('1-min demo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('intro presents curated RSS and Christmas edition', (
     tester,
   ) async {

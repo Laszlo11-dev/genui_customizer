@@ -773,6 +773,8 @@ class _ReaderPageState extends State<ReaderPage>
   Future<void> _refresh() async {
     final id = ++_requestId;
     final requestedSource = _sourceController.text.trim();
+    final isDemoFeed =
+        _source == demoFeedPreset.name && requestedSource.isEmpty;
     final presetSource = _availableFeeds
         .where((feed) => feed.url == requestedSource)
         .firstOrNull
@@ -783,11 +785,15 @@ class _ReaderPageState extends State<ReaderPage>
     });
     _render();
     try {
-      final result = await _rss.load(requestedSource, source: presetSource);
+      final result = isDemoFeed
+          ? demoRssStories()
+          : await _rss.load(requestedSource, source: presetSource);
       if (!mounted || id != _requestId) return;
       setState(() {
         _articles = result;
-        _articlesSource = presetSource ?? requestedSource;
+        _articlesSource = isDemoFeed
+            ? demoFeedPreset.name
+            : presetSource ?? requestedSource;
         _loading = false;
       });
       _render();
@@ -1211,29 +1217,38 @@ class _ReaderPageState extends State<ReaderPage>
         ],
       ),
       const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _sourceController,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'Custom RSS / Atom URL',
-                hintText: 'https://example.com/feed.xml',
-                border: OutlineInputBorder(),
-                isDense: true,
+      if (_source == demoFeedPreset.name)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Curated RSS snapshot with real articles and publisher images. '
+            'The links open the original articles.',
+          ),
+        )
+      else
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _sourceController,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(
+                  labelText: 'Custom RSS / Atom URL',
+                  hintText: 'https://example.com/feed.xml',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onSubmitted: (_) => _refresh(),
               ),
-              onSubmitted: (_) => _refresh(),
             ),
-          ),
-          const SizedBox(width: 10),
-          FilledButton.icon(
-            onPressed: _loading ? null : _refresh,
-            icon: const Icon(Icons.rss_feed),
-            label: const Text('Load'),
-          ),
-        ],
-      ),
+            const SizedBox(width: 10),
+            FilledButton.icon(
+              onPressed: _loading ? null : _refresh,
+              icon: const Icon(Icons.rss_feed),
+              label: const Text('Load'),
+            ),
+          ],
+        ),
       const SizedBox(height: 14),
       if (_occasion == Occasion.askAi)
         Align(
