@@ -15,7 +15,7 @@ Read the host's catalog, `MessageProcessor`, message path, authorization, and st
 
 For a host that edits only catalog-wide defaults, open `showGenUiTouchStudio` with `galleryOnly: true`; provide `onGalleryChanged` to rebuild the current surface after a default changes or is discarded. Keep catalog decoration if triple-click and long-press should open the editor on the touched component type. Use `showSelectionOutline: false` on the controller to avoid an item-level selection border. Continue routing incoming messages through the controller so later components receive those defaults.
 
-The [package README](../../README.md#integration) has a minimal setup snippet. The [chat example](../../example/) shows a runnable host integration; its offline mode needs no model key.
+The [package README](../../README.md#integrate-with-an-a2ui-host) has a minimal setup snippet. The [Tech Reader](../../example/) is the main runnable example with saved appearance profiles. The [chat example](../../examples/a2ui_flutter_chat/) provides an offline mode that needs no model key.
 
 ## Edits and persistence
 
@@ -27,4 +27,4 @@ The [package README](../../README.md#integration) has a minimal setup snippet. T
 
 ## Verify the host
 
-Run analyzer, tests, and a build for the host's target platform. Exercise selection, an approved edit, undo and redo, Gallery defaults on later content, role defaults after new component IDs, and rejection of a bound value. The package's [widget test](../../test/touch_test.dart) and the [example integration test](../../example/test/touch_integration_test.dart) cover the basic paths.
+Run analyzer, tests, and a build for the host's target platform. Exercise selection, an approved edit, undo and redo, Gallery defaults on later content, role defaults after new component IDs, and rejection of a bound value. The package's [widget test](../../test/touch_test.dart) and the [chat integration test](../../examples/a2ui_flutter_chat/test/touch_integration_test.dart) cover the basic paths.

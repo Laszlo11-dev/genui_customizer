@@ -38,10 +38,10 @@
 - `lib/main.dart`: host életciklus, Touch-bekötés, felület újraépítése, Ask AI és cikkakciók.
 - `lib/news_touch.dart`: Touch szerződések és `ReaderTouchStorage`.
 - `lib/news_gallery.dart`, `lib/a2ui_builder.dart`: A2UI komponensek és az alkalmi kompozíciók.
-- `../../lib/src/touch.dart`: típuspreferenciák, egy mező vagy teljes típus felülírásának törlése, triplaklikk.
-- `../../lib/src/studio.dart`, `../../lib/src/color_field.dart`: típusszintű szerkesztő, visszaállító gombok és színválasztó.
+- `../lib/src/touch.dart`: típuspreferenciák, egy mező vagy teljes típus felülírásának törlése, triplaklikk.
+- `../lib/src/studio.dart`, `../lib/src/color_field.dart`: típusszintű szerkesztő, visszaállító gombok és színválasztó.
 - `test/news_touch_test.dart`: triplaklikk, típusalapértékek, occasion mentés, visszaállítás és régi profil ellenőrzése.
-- `../../skills/genui-customizer-integration/SKILL.md`: általános Touch integrációs lépések.
+- `../skills/genui-customizer-integration/SKILL.md`: általános Touch integrációs lépések.
 
 ## Ellenőrzés
 

@@ -535,16 +535,15 @@ void main() {
       touch.dispose();
       processor.dispose();
     });
-    touch.processAgentMessages(
-      NewsA2uiBuilder.build([
-        for (var i = 0; i < 2; i++)
-          NewsItem(
-            title: 'Story $i',
-            link: Uri.parse('https://example.org/$i'),
-            source: 'Example',
-          ),
-      ], Occasion.everyday),
-    );
+    final messages = NewsA2uiBuilder.build([
+      for (var i = 0; i < 2; i++)
+        NewsItem(
+          title: 'Story $i',
+          link: Uri.parse('https://example.org/$i'),
+          source: 'Example',
+        ),
+    ], Occasion.everyday);
+    touch.processAgentMessages(messages);
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -569,9 +568,26 @@ void main() {
           controller: touch,
           surfaceId: NewsA2uiBuilder.surfaceId,
           galleryOnly: true,
+          onGalleryChanged: () {
+            touch.processAgentMessages({
+              'version': '1.0',
+              'deleteSurface': {'surfaceId': NewsA2uiBuilder.surfaceId},
+            });
+            touch.processAgentMessages(messages);
+          },
         ),
       ),
     );
+    expect(
+      find.text('Appearance for all NewsStory components'),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const Key('touch-color-field-backgroundColor')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('touch-color-choice-indigo')));
+    await tester.pumpAndSettle();
     expect(
       find.text('Appearance for all NewsStory components'),
       findsOneWidget,

@@ -1,4 +1,4 @@
-name: Deploy A2UI example to GitHub Pages
+name: Deploy A2UI Tech Reader to GitHub Pages
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
           channel: stable
           flutter-version: '3.47.9'
           cache: true
-      - name: Build offline demo
+      - name: Build Tech Reader
         working-directory: example
         run: |
           flutter pub get

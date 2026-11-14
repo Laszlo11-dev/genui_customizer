@@ -84,9 +84,16 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
   void _onControllerChanged() {
     final selection = widget.controller.selection;
     if (!identical(selection, _lastSelection)) {
+      if (widget.galleryOnly && selection == null) {
+        final previous = _lastSelection;
+        if (previous != null) {
+          galleryContract ??= widget.controller.contractFor(previous);
+        }
+      }
+      _lastSelection = selection;
+      if (widget.galleryOnly && selection == null) return;
       setState(() {
         galleryContract = null;
-        _lastSelection = selection;
       });
     }
   }

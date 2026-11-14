@@ -4,7 +4,7 @@
 
 > **Breaking change in 0.2.1:** GenUI Touch has been rewritten for **A2UI v1.0**, `a2ui_core` 0.7.x, and `a2ui_flutter` 0.3.x. The 0.1.x `genui` API has been removed. Existing 0.1.x integrations must be updated; 0.2.1 is not source compatible and does not automatically migrate saved 0.1.x snapshots or appearance profiles.
 
-**[Try the A2UI chat example in your browser](https://laszlo11-dev.github.io/genui_customizer/).** It uses a fixed offline reply, so no account or API key is needed.
+**[Try the A2UI Tech Reader in your browser](https://laszlo11-dev.github.io/genui_customizer/).** The main example reads technology RSS feeds and lets you edit and save the A2UI news appearance. Its Ask AI feature is optional.
 
 ## What it does
 
@@ -59,7 +59,7 @@ To persist preferences, implement `TouchStorage`, load its `TouchProfile` before
 
 For multiple configurations, use `TouchConfiguration` with separate `TouchConfigurationStore` and `TouchLocalConfigurationStore` implementations. Both have shared-preferences defaults and independent `list`, `load`, `save`, and `delete` operations; a host can implement either interface for its own backend. A configuration stores a `TouchProfile` and JSON-compatible host data, such as a complete occasion definition. The host interprets that data and provides the active remote and user profiles to `useConfigurations`. Touch merges remote appearance before local appearance. The Studio edits and saves only the selected profile through `saveEditedProfile`, so the host should save it back into the matching configuration record alongside its occasion data. The existing `TouchStorage` path remains available for single-profile integrations.
 
-The [integration skill](skills/genui-customizer-integration/SKILL.md) gives further host guidance. The [example](example/) adapts the official A2UI Flutter chat app. It runs with a fixed offline demo reply by default and can use Gemini when configured; see its [run instructions](example/README.md). The example does not provide durable appearance storage.
+The [integration skill](skills/genui-customizer-integration/SKILL.md) gives further host guidance. The main [Tech Reader example](example/) demonstrates an RSS-driven A2UI surface with saved appearance profiles; see its [run instructions](example/README.md). The [A2UI Flutter chat example](examples/a2ui_flutter_chat/) lives under `examples/`. It uses a fixed offline reply by default and can use Gemini when configured; see its [run instructions](examples/a2ui_flutter_chat/README.md).
 
 For catalog color literals, use `TouchValueKind.color`. The Studio shows a current-color swatch and a built-in palette of 16 colors; existing valid `#RRGGBB` and `#AARRGGBB` values remain visible even when they are outside that palette.
 
@@ -76,7 +76,7 @@ The [migration plan](doc/a2ui-package-plan.md) records the redesign decisions. F
 
 ## Earlier screenshots
 
-These images show the 0.1.x Restaurant Finder host. They illustrate the editing concept, not the current A2UI chat example.
+These images show the 0.1.x Restaurant Finder host. They illustrate the editing concept, not the current A2UI Tech Reader.
 
 <img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="Earlier 0.1.x GenUI Touch Studio over Restaurant Finder" width="400">
 

@@ -1,11 +1,11 @@
 {
-    "name": "A2UI Tech Reader",
-    "short_name": "Tech Reader",
+    "name": "A2UI chat - GenUI Touch",
+    "short_name": "A2UI chat",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "An RSS news stream rendered with A2UI.",
+    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
