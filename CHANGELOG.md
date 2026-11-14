@@ -1,3 +1,15 @@
+## Unreleased
+
+- Keep asynchronous profile loads from replacing newer edits or configuration selections.
+- Clear local undo history when its surface is deleted, and retain undo/redo entries if replay fails.
+- Copy configuration data into immutable JSON values at construction.
+- Refresh an open Studio when its surface or controller changes, and keep widget builds free of state writes.
+- Use `SharedPreferencesAsync` for configuration storage and migrate existing package keys from the legacy store.
+- Declare Flutter 3.47 as the minimum matching the Dart 3.13 SDK constraint.
+- Keep profile rules immutable, including nested JSON values, so callers cannot change saved state through shared maps.
+- Keep asynchronous saves tied to the profile and configuration selected when saving began.
+- Replace `const TouchProfile()` with `const TouchProfile.empty()` for constant empty profiles; profiles with rules now use the non-const `TouchProfile(...)` constructor.
+
 ## 0.2.1
 
 - Release the A2UI v1.0 rewrite as a stable package. This is a breaking change from the 0.1.x `genui` API.

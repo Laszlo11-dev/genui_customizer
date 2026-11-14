@@ -10,13 +10,33 @@ import 'touch.dart';
 final _openStudios = Expando<_OpenStudio>();
 
 class _OpenStudio {
-  _OpenStudio(this.controller, this.onGalleryChanged)
-    : selection = controller.selection;
+  _OpenStudio(_StudioRequest initial)
+    : request = ValueNotifier(initial),
+      selection = initial.controller.selection;
 
-  final GenUiTouchController controller;
-  final VoidCallback? onGalleryChanged;
+  final ValueNotifier<_StudioRequest> request;
   TouchSelection? selection;
   bool prompting = false;
+}
+
+class _StudioRequest {
+  const _StudioRequest({
+    required this.controller,
+    required this.surfaceId,
+    required this.galleryPreview,
+    required this.galleryOnly,
+    required this.colorPalette,
+    required this.onGalleryChanged,
+    required this.boundsPersistence,
+  });
+
+  final GenUiTouchController controller;
+  final String surfaceId;
+  final TouchGalleryPreview? galleryPreview;
+  final bool galleryOnly;
+  final List<TouchColorSwatch>? colorPalette;
+  final VoidCallback? onGalleryChanged;
+  final TouchStudioBoundsPersistence? boundsPersistence;
 }
 
 /// Opens the same floating, movable, resizable Studio pattern as the earlier
@@ -33,25 +53,39 @@ Future<void> showGenUiTouchStudio({
       const SharedPreferencesTouchStudioBoundsPersistence(),
 }) async {
   final navigator = Navigator.of(context, rootNavigator: true);
+  final request = _StudioRequest(
+    controller: controller,
+    surfaceId: surfaceId,
+    galleryPreview: galleryPreview,
+    galleryOnly: galleryOnly,
+    colorPalette: colorPalette,
+    onGalleryChanged: onGalleryChanged,
+    boundsPersistence: boundsPersistence,
+  );
   final existing = _openStudios[navigator];
   if (existing != null) {
+    final previousRequest = existing.request.value;
+    final previousController = previousRequest.controller;
     if (existing.prompting) {
       if (existing.selection case final previous?) {
-        existing.controller.select(previous);
+        previousController.select(previous);
       }
       return;
     }
     final nextSelection = controller.selection;
-    if (nextSelection?.surfaceId == existing.selection?.surfaceId &&
+    if (identical(controller, previousController) &&
+        surfaceId == previousRequest.surfaceId &&
+        galleryOnly == previousRequest.galleryOnly &&
+        nextSelection?.surfaceId == existing.selection?.surfaceId &&
         nextSelection?.componentId == existing.selection?.componentId &&
         nextSelection?.instanceId == existing.selection?.instanceId) {
       return;
     }
-    if (existing.controller.hasUnsavedProfileChanges) {
+    if (previousController.hasUnsavedProfileChanges) {
       existing.prompting = true;
       // Keep the current editor content in place while the user decides.
       if (existing.selection case final previous?) {
-        existing.controller.select(previous);
+        previousController.select(previous);
       }
       final choice = await showDialog<String>(
         context: navigator.context,
@@ -70,7 +104,7 @@ Future<void> showGenUiTouchStudio({
               child: const Text('Discard changes'),
             ),
             FilledButton(
-              onPressed: existing.controller.canPersist
+              onPressed: previousController.canPersist
                   ? () => Navigator.of(dialogContext).pop('save')
                   : null,
               child: const Text('Save changes'),
@@ -82,7 +116,7 @@ Future<void> showGenUiTouchStudio({
       if (choice == null || choice == 'cancel') return;
       if (choice == 'save') {
         try {
-          await existing.controller.save();
+          await previousController.save();
         } catch (error) {
           if (navigator.mounted) {
             ScaffoldMessenger.of(navigator.context)
@@ -91,17 +125,18 @@ Future<void> showGenUiTouchStudio({
           return;
         }
       } else {
-        existing.controller.discardGalleryChanges();
-        existing.onGalleryChanged?.call();
+        previousController.discardGalleryChanges();
+        previousRequest.onGalleryChanged?.call();
       }
     }
     if (nextSelection != null) {
-      existing.controller.select(nextSelection);
-      existing.selection = nextSelection;
+      controller.select(nextSelection);
     }
+    existing.selection = nextSelection;
+    existing.request.value = request;
     return;
   }
-  final session = _OpenStudio(controller, onGalleryChanged);
+  final session = _OpenStudio(request);
   _openStudios[navigator] = session;
   final themes = InheritedTheme.capture(from: context, to: navigator.context);
   Rect? stored;
@@ -112,21 +147,30 @@ Future<void> showGenUiTouchStudio({
   }
   if (!context.mounted || !navigator.mounted) {
     _openStudios[navigator] = null;
+    session.request.dispose();
     return;
   }
   try {
     await navigator.push<void>(
       _TouchStudioRoute(
         themes: themes,
-        builder: (_) => _FloatingWindow(
-          controller: controller,
-          surfaceId: surfaceId,
-          galleryPreview: galleryPreview,
-          galleryOnly: galleryOnly,
-          colorPalette: colorPalette,
-          onGalleryChanged: onGalleryChanged,
-          initialBounds: stored,
-          boundsPersistence: boundsPersistence,
+        builder: (_) => ValueListenableBuilder<_StudioRequest>(
+          valueListenable: session.request,
+          builder: (context, current, _) => _FloatingWindow(
+            key: ValueKey((
+              current.controller,
+              current.surfaceId,
+              current.galleryOnly,
+            )),
+            controller: current.controller,
+            surfaceId: current.surfaceId,
+            galleryPreview: current.galleryPreview,
+            galleryOnly: current.galleryOnly,
+            colorPalette: current.colorPalette,
+            onGalleryChanged: current.onGalleryChanged,
+            initialBounds: stored,
+            boundsPersistence: current.boundsPersistence,
+          ),
         ),
       ),
     );
@@ -134,6 +178,7 @@ Future<void> showGenUiTouchStudio({
     if (identical(_openStudios[navigator], session)) {
       _openStudios[navigator] = null;
     }
+    session.request.dispose();
   }
 }
 
@@ -153,6 +198,7 @@ final class _TouchStudioRoute extends RawDialogRoute<void> {
 
 class _FloatingWindow extends StatefulWidget {
   const _FloatingWindow({
+    super.key,
     required this.controller,
     required this.surfaceId,
     required this.galleryPreview,
@@ -178,7 +224,6 @@ class _FloatingWindow extends StatefulWidget {
 
 class _FloatingWindowState extends State<_FloatingWindow> {
   Rect? _bounds;
-  Size _viewport = Size.zero;
 
   @override
   void initState() {
@@ -215,20 +260,16 @@ class _FloatingWindowState extends State<_FloatingWindow> {
     return Rect.fromLTWH(left.toDouble(), top.toDouble(), width, height);
   }
 
-  void _move(DragUpdateDetails details) {
+  void _move(DragUpdateDetails details, Rect bounds, Size viewport) {
     setState(() {
-      _bounds = _fit(
-        (_bounds ?? _initial(_viewport)).shift(details.delta),
-        _viewport,
-      );
+      _bounds = _fit(bounds.shift(details.delta), viewport);
     });
   }
 
-  void _resize(DragUpdateDetails details) {
+  void _resize(DragUpdateDetails details, Rect bounds, Size viewport) {
     setState(() {
-      final bounds = _bounds ?? _initial(_viewport);
-      final maxWidth = max(0.0, _viewport.width - bounds.left - 24);
-      final maxHeight = max(0.0, _viewport.height - bounds.top - 32);
+      final maxWidth = max(0.0, viewport.width - bounds.left - 24);
+      final maxHeight = max(0.0, viewport.height - bounds.top - 32);
       _bounds = Rect.fromLTWH(
         bounds.left,
         bounds.top,
@@ -255,9 +296,8 @@ class _FloatingWindowState extends State<_FloatingWindow> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      _viewport = constraints.biggest;
-      final bounds = _fit(_bounds ?? _initial(_viewport), _viewport);
-      _bounds = bounds;
+      final viewport = constraints.biggest;
+      final bounds = _fit(_bounds ?? _initial(viewport), viewport);
       final colors = Theme.of(context).colorScheme;
       return Stack(
         children: [
@@ -286,7 +326,7 @@ class _FloatingWindowState extends State<_FloatingWindow> {
                         galleryOnly: widget.galleryOnly,
                         colorPalette: widget.colorPalette,
                         onGalleryChanged: widget.onGalleryChanged,
-                        onMove: _move,
+                        onMove: (details) => _move(details, bounds, viewport),
                         onMoveEnd: _remember,
                         onClose: () => Navigator.of(context).pop(),
                       ),
@@ -299,7 +339,8 @@ class _FloatingWindowState extends State<_FloatingWindow> {
                         child: GestureDetector(
                           key: const Key('genui-studio-resize'),
                           behavior: HitTestBehavior.opaque,
-                          onPanUpdate: _resize,
+                          onPanUpdate: (details) =>
+                              _resize(details, bounds, viewport),
                           onPanEnd: (_) => _remember(),
                           child: const SizedBox(
                             width: 28,

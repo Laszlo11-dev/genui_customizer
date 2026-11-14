@@ -16,6 +16,88 @@ class _MemoryStorage implements TouchStorage {
 }
 
 void main() {
+  testWidgets('open Studio follows a new surface without a selection', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final contract = TouchContract(
+      catalogId: BasicCatalog.v1_0Id,
+      componentType: 'Text',
+      properties: const [
+        TouchProperty(
+          name: 'variant',
+          label: 'Style',
+          kind: TouchValueKind.choice,
+          choices: ['body', 'caption'],
+        ),
+      ],
+    );
+    final controller = GenUiTouchController(contracts: [contract]);
+    final processor = MessageProcessor<ComponentImplementation>(
+      catalogs: [controller.decorateCatalog(basicCatalog())],
+    );
+    controller.attachProcessor(processor);
+    addTearDown(controller.dispose);
+    addTearDown(processor.dispose);
+    for (final (surfaceId, componentId) in [
+      ('one', 'first'),
+      ('two', 'second'),
+    ]) {
+      controller.processAgentMessages([
+        {
+          'version': '1.0',
+          'createSurface': {
+            'surfaceId': surfaceId,
+            'catalogId': BasicCatalog.v1_0Id,
+          },
+        },
+        {
+          'version': '1.0',
+          'updateComponents': {
+            'surfaceId': surfaceId,
+            'components': [
+              {'id': componentId, 'component': 'Text', 'text': componentId},
+            ],
+          },
+        },
+      ]);
+    }
+    late BuildContext hostContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return const Scaffold(body: SizedBox.expand());
+          },
+        ),
+      ),
+    );
+    showGenUiTouchStudio(
+      context: hostContext,
+      controller: controller,
+      surfaceId: 'one',
+      boundsPersistence: null,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('first'), findsOneWidget);
+
+    showGenUiTouchStudio(
+      context: hostContext,
+      controller: controller,
+      surfaceId: 'two',
+      boundsPersistence: null,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('second'), findsOneWidget);
+    expect(find.text('first'), findsNothing);
+    await tester.tap(find.byTooltip('Close editor'));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets(
     'reuses the window and confirms unsaved changes before switching',
     (tester) async {

@@ -209,7 +209,7 @@ class _ReaderPageState extends State<ReaderPage>
         TouchConfiguration(
           id: edition.name,
           name: edition.label,
-          profile: legacyProfile ?? const TouchProfile(),
+          profile: legacyProfile ?? const TouchProfile.empty(),
           data: {
             'occasion': edition.name,
             'style': styleFor(edition).toJson(),
@@ -256,7 +256,7 @@ class _ReaderPageState extends State<ReaderPage>
     }
     _touch.useConfigurations(
       remote: remote.profile,
-      local: local?.profile ?? const TouchProfile(),
+      local: local?.profile ?? const TouchProfile.empty(),
       editRemote: user == _DemoUser.tenantEditor,
       label: user == _DemoUser.tenantEditor
           ? 'Remote: ${remote.name}'
@@ -277,7 +277,7 @@ class _ReaderPageState extends State<ReaderPage>
                       id: 'preferences',
                       name: '${user.label} preferences',
                       userId: user.name,
-                      profile: const TouchProfile(),
+                      profile: const TouchProfile.empty(),
                     ))
                 .copyWith(profile: profile),
           );

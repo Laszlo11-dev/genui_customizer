@@ -4,6 +4,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'touch.dart';
 
+const _remotePrefix = 'genui_touch.remote.v1.';
+const _localPrefix = 'genui_touch.local.v1.';
+const _migrationKey = 'genui_touch.async_migration.v1';
+
+Future<SharedPreferencesAsync> _touchPreferences() async {
+  final prefs = SharedPreferencesAsync();
+  if (await prefs.getBool(_migrationKey) == true) return prefs;
+
+  final legacy = await SharedPreferences.getInstance();
+  await legacy.reload();
+  for (final key in legacy.getKeys()) {
+    if (!key.startsWith(_remotePrefix) && !key.startsWith(_localPrefix)) {
+      continue;
+    }
+    final value = legacy.getString(key);
+    if (value != null && await prefs.getString(key) == null) {
+      await prefs.setString(key, value);
+    }
+  }
+  await prefs.setBool(_migrationKey, true);
+  return prefs;
+}
+
 /// A saved appearance plus the host's complete, JSON-serializable occasion data.
 /// The host owns the meaning and validation of [data].
 final class TouchConfiguration {
@@ -11,17 +34,31 @@ final class TouchConfiguration {
     required this.id,
     required this.name,
     required this.profile,
-    this.data = const {},
+    Map<String, Object?> data = const {},
     this.userId,
     this.scope = 'tree',
     this.preset = false,
     this.active = true,
-  }) {
+  }) : data = _freezeData(data) {
     if (id.isEmpty || name.isEmpty || scope.isEmpty) {
       throw ArgumentError('Configuration id, name and scope must be nonempty.');
     }
-    // Reject nonportable values before persistence or a host callback sees them.
-    jsonEncode(data);
+  }
+
+  static Map<String, Object?> _freezeData(Map<String, Object?> data) {
+    final copy = jsonDecode(jsonEncode(data)) as Map<String, dynamic>;
+    Object? freeze(Object? value) {
+      if (value is Map) {
+        return Map<String, Object?>.unmodifiable({
+          for (final entry in value.entries)
+            entry.key as String: freeze(entry.value),
+        });
+      }
+      if (value is List) return List<Object?>.unmodifiable(value.map(freeze));
+      return value;
+    }
+
+    return freeze(copy)! as Map<String, Object?>;
   }
 
   final String id;
@@ -110,26 +147,26 @@ abstract interface class TouchLocalConfigurationStore {
 final class SharedPreferencesTouchRemoteStore
     implements TouchConfigurationStore {
   const SharedPreferencesTouchRemoteStore();
-  static const _prefix = 'genui_touch.remote.v1.';
+  static const _prefix = _remotePrefix;
 
   @override
   Future<List<TouchConfiguration>> list() async {
-    final prefs = await SharedPreferences.getInstance();
-    final ids = prefs.getKeys().where((key) => key.startsWith(_prefix)).toList()
-      ..sort();
+    final prefs = await _touchPreferences();
+    final ids =
+        (await prefs.getKeys()).where((key) => key.startsWith(_prefix)).toList()
+          ..sort();
     return [
       for (final key in ids)
         TouchConfiguration.fromJson(
-          (jsonDecode(prefs.getString(key)!) as Map).cast<String, Object?>(),
+          (jsonDecode((await prefs.getString(key))!) as Map)
+              .cast<String, Object?>(),
         ),
     ];
   }
 
   @override
   Future<TouchConfiguration?> load(String id) async {
-    final raw = (await SharedPreferences.getInstance()).getString(
-      '$_prefix$id',
-    );
+    final raw = await (await _touchPreferences()).getString('$_prefix$id');
     return raw == null
         ? null
         : TouchConfiguration.fromJson(
@@ -142,16 +179,15 @@ final class SharedPreferencesTouchRemoteStore
     if (configuration.userId != null) {
       throw ArgumentError('Remote configuration must not have a user id.');
     }
-    final ok = await (await SharedPreferences.getInstance()).setString(
+    await (await _touchPreferences()).setString(
       '$_prefix${configuration.id}',
       jsonEncode(configuration.toJson()),
     );
-    if (!ok) throw StateError('Could not save remote configuration.');
   }
 
   @override
   Future<void> delete(String id) async {
-    await (await SharedPreferences.getInstance()).remove('$_prefix$id');
+    await (await _touchPreferences()).remove('$_prefix$id');
   }
 }
 
@@ -159,29 +195,29 @@ final class SharedPreferencesTouchRemoteStore
 final class SharedPreferencesTouchLocalStore
     implements TouchLocalConfigurationStore {
   const SharedPreferencesTouchLocalStore();
-  static const _prefix = 'genui_touch.local.v1.';
+  static const _prefix = _localPrefix;
   String _key(String userId, String id) =>
       '$_prefix${Uri.encodeComponent(userId)}.${Uri.encodeComponent(id)}';
 
   @override
   Future<List<TouchConfiguration>> list(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _touchPreferences();
     final prefix = '$_prefix${Uri.encodeComponent(userId)}.';
-    final keys = prefs.getKeys().where((key) => key.startsWith(prefix)).toList()
-      ..sort();
+    final keys =
+        (await prefs.getKeys()).where((key) => key.startsWith(prefix)).toList()
+          ..sort();
     return [
       for (final key in keys)
         TouchConfiguration.fromJson(
-          (jsonDecode(prefs.getString(key)!) as Map).cast<String, Object?>(),
+          (jsonDecode((await prefs.getString(key))!) as Map)
+              .cast<String, Object?>(),
         ),
     ];
   }
 
   @override
   Future<TouchConfiguration?> load(String userId, String id) async {
-    final raw = (await SharedPreferences.getInstance()).getString(
-      _key(userId, id),
-    );
+    final raw = await (await _touchPreferences()).getString(_key(userId, id));
     return raw == null
         ? null
         : TouchConfiguration.fromJson(
@@ -194,15 +230,14 @@ final class SharedPreferencesTouchLocalStore
     if (configuration.userId != userId) {
       throw ArgumentError('Local configuration belongs to another user.');
     }
-    final ok = await (await SharedPreferences.getInstance()).setString(
+    await (await _touchPreferences()).setString(
       _key(userId, configuration.id),
       jsonEncode(configuration.toJson()),
     );
-    if (!ok) throw StateError('Could not save local configuration.');
   }
 
   @override
   Future<void> delete(String userId, String id) async {
-    await (await SharedPreferences.getInstance()).remove(_key(userId, id));
+    await (await _touchPreferences()).remove(_key(userId, id));
   }
 }

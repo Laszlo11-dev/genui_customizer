@@ -49,7 +49,7 @@ List<TouchConfiguration> demoLocalConfigurations() {
       id: 'preferences',
       name: 'Fred preferences',
       userId: 'fred',
-      profile: const TouchProfile(),
+      profile: const TouchProfile.empty(),
       data: const {
         'description': 'Keep the received occasion appearance',
         'demoSeedVersion': 2,

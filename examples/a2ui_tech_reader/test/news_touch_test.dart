@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui_customizer/genui_customizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 class _MemoryStorage implements TouchStorage {
   TouchProfile? profile;
@@ -25,6 +27,11 @@ class _MemoryStorage implements TouchStorage {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
   testWidgets('invalid saved occasion data falls back to a working edition', (
     tester,
   ) async {
@@ -33,7 +40,7 @@ void main() {
       TouchConfiguration(
         id: Occasion.christmas.name,
         name: 'Christmas',
-        profile: const TouchProfile(),
+        profile: const TouchProfile.empty(),
         data: const {
           'style': {'headline': 42},
           'palette': {'accent': 42},
@@ -125,7 +132,9 @@ void main() {
     );
     expect(
       header.color,
-      Theme.of(tester.element(panel)).colorScheme.inverseSurface,
+      Theme.of(tester.element(find.byType(ReaderPage)))
+          .colorScheme
+          .inverseSurface,
     );
     final card = tester.widget<Card>(
       find.ancestor(of: panel, matching: find.byType(Card)).first,
@@ -215,7 +224,10 @@ void main() {
           }
         }
       }
-      await store.save('joe', joe!.copyWith(profile: const TouchProfile()));
+      await store.save(
+        'joe',
+        joe!.copyWith(profile: const TouchProfile.empty()),
+      );
       await seedDemoLocalConfigurations(store);
       expect(
         (await store.load('joe', 'preferences'))?.profile.defaults,
@@ -290,9 +302,9 @@ void main() {
         .get('status_title')
         ?.toJson()[property];
 
-    Color pageColor() => Theme.of(
-      tester.element(find.byType(A2uiSurface)),
-    ).scaffoldBackgroundColor;
+    Color pageColor() =>
+        Theme.of(tester.element(find.byType(A2uiSurface)))
+            .scaffoldBackgroundColor;
 
     final remoteBackground = section('backgroundColor');
     final remotePageColor = pageColor();
@@ -389,9 +401,9 @@ void main() {
     await tester.pumpWidget(const TechReaderApp());
     await tester.pumpAndSettle();
 
-    Color shellBackground() => Theme.of(
-      tester.element(find.byType(A2uiSurface)),
-    ).scaffoldBackgroundColor;
+    Color shellBackground() =>
+        Theme.of(tester.element(find.byType(A2uiSurface)))
+            .scaffoldBackgroundColor;
     Object? pageBackground() => tester
         .widget<A2uiSurface>(find.byType(A2uiSurface))
         .surface
@@ -412,9 +424,10 @@ void main() {
     expect(pageBackground(), '#4F46E5');
     expect(shellBackground(), const Color(0xFF4F46E5));
     expect(
-      Theme.of(
-        tester.element(find.byType(A2uiSurface)),
-      ).textTheme.bodyMedium?.color,
+      Theme.of(tester.element(find.byType(A2uiSurface)))
+          .textTheme
+          .bodyMedium
+          ?.color,
       Colors.white,
     );
 
@@ -621,11 +634,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Appearance saved'), findsWidgets);
     expect(tester.widget<IconButton>(save).onPressed, isNull);
-    final prefs = await SharedPreferences.getInstance();
-    final key = prefs.getKeys().singleWhere((key) => key.contains('remote.v1'));
-    final remote = TouchConfiguration.fromJson(
-      (jsonDecode(prefs.getString(key)!) as Map).cast<String, Object?>(),
-    );
+    final remote = (await const SharedPreferencesTouchRemoteStore().load(
+      'everyday',
+    ))!;
     final profile = remote.profile;
     expect(remote.data['occasion'], 'everyday');
     expect(remote.data['style'], isA<Map>());
@@ -681,9 +692,9 @@ void main() {
     expect(tester.widget<IconButton>(save).onPressed, isNotNull);
     await tester.tap(save);
     await tester.pumpAndSettle();
-    final resetProfile = TouchConfiguration.fromJson(
-      (jsonDecode(prefs.getString(key)!) as Map).cast<String, Object?>(),
-    ).profile;
+    final resetProfile = (await const SharedPreferencesTouchRemoteStore().load(
+      'everyday',
+    ))!.profile;
     expect(
       resetProfile
           .defaults['$newsGalleryCatalogId\u0000NewsSection']?['backgroundColor'],

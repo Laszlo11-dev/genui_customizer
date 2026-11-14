@@ -57,6 +57,40 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
   TouchSelection? _lastSelection;
   double splitFraction = 0.42;
 
+  @override
+  void initState() {
+    super.initState();
+    _lastSelection = widget.controller.selection;
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(GenUiTouchStudio oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      _lastSelection = widget.controller.selection;
+      galleryContract = null;
+      widget.controller.addListener(_onControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    final selection = widget.controller.selection;
+    if (!identical(selection, _lastSelection)) {
+      setState(() {
+        galleryContract = null;
+        _lastSelection = selection;
+      });
+    }
+  }
+
   void _closeDrawer() {
     if (_scaffoldKey.currentState?.isDrawerOpen == true) {
       _scaffoldKey.currentState?.closeDrawer();
@@ -462,10 +496,6 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
   Widget _gallery(BuildContext context) {
     final contracts = widget.controller.contracts.toList();
     final selected = widget.controller.selection;
-    if (!identical(selected, _lastSelection)) {
-      galleryContract = null;
-      _lastSelection = selected;
-    }
     final selectedContract = selected == null
         ? null
         : widget.controller.contractFor(selected);

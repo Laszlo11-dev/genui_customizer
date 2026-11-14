@@ -19,6 +19,50 @@ void main() {
     ],
   );
 
+  test('deleting a surface clears its local undo history', () {
+    final touch = GenUiTouchController(contracts: [textContract]);
+    final processor = MessageProcessor<ComponentImplementation>(
+      catalogs: [touch.decorateCatalog(basicCatalog())],
+    );
+    touch.attachProcessor(processor);
+    addTearDown(touch.dispose);
+    addTearDown(processor.dispose);
+    touch.processAgentMessages([
+      {
+        'version': '1.0',
+        'createSurface': {'surfaceId': 'one', 'catalogId': BasicCatalog.v1_0Id},
+      },
+      {
+        'version': '1.0',
+        'updateComponents': {
+          'surfaceId': 'one',
+          'components': [
+            {'id': 'text', 'component': 'Text', 'text': 'Hello'},
+          ],
+        },
+      },
+    ]);
+    touch.select(
+      const TouchSelection(
+        surfaceId: 'one',
+        componentId: 'text',
+        catalogId: BasicCatalog.v1_0Id,
+        componentType: 'Text',
+        instanceId: 'text',
+        dataPath: '',
+      ),
+    );
+    touch.edit('variant', 'caption');
+    expect(touch.canUndo, isTrue);
+
+    touch.processAgentMessages({
+      'version': '1.0',
+      'deleteSurface': {'surfaceId': 'one'},
+    });
+    expect(touch.canUndo, isFalse);
+    expect(touch.selection, isNull);
+  });
+
   testWidgets('runtime edit and Gallery default use the A2UI v1 processor', (
     tester,
   ) async {
@@ -151,9 +195,32 @@ void main() {
       throwsFormatException,
     );
     expect(
-      TouchProfile.fromJson(const TouchProfile().toJson())
-          .toJson()['formatVersion'],
+      TouchProfile.fromJson(TouchProfile().toJson()).toJson()['formatVersion'],
       2,
+    );
+  });
+
+  test('profile owns its rules and exposes immutable maps', () {
+    final nested = <String, Object?>{
+      'colors': <Object?>['blue'],
+    };
+    final values = <String, Object?>{'variant': 'body', 'extra': nested};
+    final defaults = <String, Map<String, Object?>>{
+      'catalog\u0000Text': values,
+    };
+    final profile = TouchProfile(defaults: defaults);
+    values['variant'] = 'caption';
+    (nested['colors']! as List<Object?>).add('red');
+    defaults.clear();
+
+    expect(profile.defaults['catalog\u0000Text']?['variant'], 'body');
+    final frozen = profile.defaults['catalog\u0000Text']?['extra'] as Map;
+    expect(frozen['colors'], ['blue']);
+    expect(() => (frozen['colors'] as List).add('red'), throwsUnsupportedError);
+    expect(() => profile.defaults.clear(), throwsUnsupportedError);
+    expect(
+      () => profile.defaults['catalog\u0000Text']!['variant'] = 'caption',
+      throwsUnsupportedError,
     );
   });
 }

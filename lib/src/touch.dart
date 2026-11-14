@@ -90,7 +90,36 @@ typedef TouchPropertyComposer = Future<Object?> Function(
 
 /// Portable saved defaults and role preferences, independent of component IDs.
 final class TouchProfile {
-  const TouchProfile({this.defaults = const {}, this.roles = const {}});
+  TouchProfile({
+    Map<String, Map<String, Object?>> defaults = const {},
+    Map<String, Map<String, Object?>> roles = const {},
+  }) : defaults = _freeze(defaults),
+       roles = _freeze(roles);
+
+  const TouchProfile.empty() : defaults = const {}, roles = const {};
+
+  static Map<String, Map<String, Object?>> _freeze(
+    Map<String, Map<String, Object?>> rules,
+  ) => Map.unmodifiable({
+    for (final entry in rules.entries)
+      entry.key: Map<String, Object?>.unmodifiable({
+        for (final property in entry.value.entries)
+          property.key: _freezeValue(property.value),
+      }),
+  });
+
+  static Object? _freezeValue(Object? value) {
+    if (value is Map) {
+      return Map<String, Object?>.unmodifiable({
+        for (final entry in value.entries)
+          entry.key as String: _freezeValue(entry.value),
+      });
+    }
+    if (value is List) {
+      return List<Object?>.unmodifiable(value.map(_freezeValue));
+    }
+    return value;
+  }
 
   /// Keys are `catalogId\u0000componentType`; values are property maps.
   final Map<String, Map<String, Object?>> defaults;
@@ -115,11 +144,11 @@ final class TouchProfile {
         if (entry.key is! String || entry.value is! Map) {
           throw const FormatException('Invalid Touch profile rule.');
         }
-        result[entry.key as String] = Map<String, Object?>.unmodifiable(
+        result[entry.key as String] = Map<String, Object?>.from(
           (entry.value as Map).cast<String, Object?>(),
         );
       }
-      return Map.unmodifiable(result);
+      return result;
     }
 
     return TouchProfile(
@@ -157,7 +186,7 @@ final class GenUiTouchController extends ChangeNotifier {
     this.composer,
     this.onStudioRequested,
     this.showSelectionOutline = true,
-    TouchProfile profile = const TouchProfile(),
+    TouchProfile profile = const TouchProfile.empty(),
   }) : _contracts = Map.unmodifiable({
          for (final contract in contracts)
            _typeKey(contract.catalogId, contract.componentType): contract,
@@ -174,8 +203,8 @@ final class GenUiTouchController extends ChangeNotifier {
   MessageProcessor<ComponentImplementation>? _processor;
   TouchProfile _savedProfile;
   TouchProfile _profile;
-  TouchProfile _remoteProfile = const TouchProfile();
-  TouchProfile _localProfile = const TouchProfile();
+  TouchProfile _remoteProfile = const TouchProfile.empty();
+  TouchProfile _localProfile = const TouchProfile.empty();
   bool _editingRemote = false;
   Future<void> Function(TouchProfile)? _configurationSaver;
   String? _configurationLabel;
@@ -188,6 +217,7 @@ final class GenUiTouchController extends ChangeNotifier {
   int _tapCount = 0;
   String? _error;
   int _revision = 0;
+  int _profileContext = 0;
 
   MessageProcessor<ComponentImplementation> get processor =>
       _processor ??
@@ -214,6 +244,7 @@ final class GenUiTouchController extends ChangeNotifier {
     required Future<void> Function(TouchProfile) saveEditedProfile,
     String? label,
   }) {
+    _profileContext++;
     _remoteProfile = remote;
     _localProfile = local;
     _editingRemote = editRemote;
@@ -311,6 +342,7 @@ final class GenUiTouchController extends ChangeNotifier {
   void processAgentMessages(Object? payload) {
     final messages = _messages(payload);
     final touched = <String>{};
+    final deletedSurfaces = <String>{};
     final patched = <Map<String, Object?>>[];
     for (final message in messages) {
       if (message['version'] != '1.0') {
@@ -345,15 +377,19 @@ final class GenUiTouchController extends ChangeNotifier {
       }
       final deleted = copy['deleteSurface'];
       if (deleted is Map && deleted['surfaceId'] is String) {
-        _surfaceCatalogs.remove(deleted['surfaceId']);
+        final surfaceId = deleted['surfaceId'] as String;
+        _surfaceCatalogs.remove(surfaceId);
+        deletedSurfaces.add(surfaceId);
       }
       patched.add(copy);
     }
     processor.processMessages(patched);
     _undo.removeWhere(
-      (edit) => touched.contains(
-        '${edit.selection.surfaceId}\u0000${edit.selection.componentId}',
-      ),
+      (edit) =>
+          deletedSurfaces.contains(edit.selection.surfaceId) ||
+          touched.contains(
+            '${edit.selection.surfaceId}\u0000${edit.selection.componentId}',
+          ),
     );
     _redo.clear();
     if (_selection case final selected?) {
@@ -413,8 +449,9 @@ final class GenUiTouchController extends ChangeNotifier {
 
   void undo() {
     if (_undo.isEmpty) return;
-    final edit = _undo.removeLast();
+    final edit = _undo.last;
     _write(edit.selection, edit.property, edit.before, present: edit.beforeSet);
+    _undo.removeLast();
     _redo.add(edit);
     _revision++;
     notifyListeners();
@@ -422,8 +459,9 @@ final class GenUiTouchController extends ChangeNotifier {
 
   void redo() {
     if (_redo.isEmpty) return;
-    final edit = _redo.removeLast();
+    final edit = _redo.last;
     _write(edit.selection, edit.property, edit.after, present: true);
+    _redo.removeLast();
     _undo.add(edit);
     _revision++;
     notifyListeners();
@@ -521,25 +559,37 @@ final class GenUiTouchController extends ChangeNotifier {
   }
 
   Future<void> save() async {
+    final context = _profileContext;
+    final saving = _profile;
     final configurationSaver = _configurationSaver;
     if (configurationSaver != null) {
-      final saving = _profile;
       await configurationSaver(saving);
-      _savedProfile = saving;
-      notifyListeners();
+      if (context == _profileContext) {
+        _savedProfile = saving;
+        notifyListeners();
+      }
       return;
     }
     final destination =
         storage ??
         (throw StateError('The host has not configured TouchStorage.'));
-    await destination.save(_profile);
-    _savedProfile = _profile;
-    notifyListeners();
+    await destination.save(saving);
+    if (context == _profileContext) {
+      _savedProfile = saving;
+      notifyListeners();
+    }
   }
 
   Future<void> load() async {
+    final context = _profileContext;
+    final current = _profile;
     final loaded = await storage?.load();
-    if (loaded == null) return;
+    if (loaded == null ||
+        context != _profileContext ||
+        !identical(current, _profile)) {
+      return;
+    }
+    _profileContext++;
     _savedProfile = loaded;
     _profile = loaded;
     _revision++;
@@ -574,7 +624,7 @@ final class GenUiTouchController extends ChangeNotifier {
       if (role != null) ...?profile.roles[_roleKey(catalog, type, role)],
     };
     final remote = _configurationSaver == null
-        ? const TouchProfile()
+        ? const TouchProfile.empty()
         : _editingRemote
         ? _profile
         : _remoteProfile;
