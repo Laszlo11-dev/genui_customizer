@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
@@ -99,6 +98,7 @@ class _ReaderPageState extends State<ReaderPage>
   OccasionPalette? _occasionPalette;
   OccasionComposition? _occasionComposition;
   bool _touchReady = false;
+  bool _demoExpanded = true;
   bool _hasSavedAiLayout = false;
   SurfaceModel<ComponentImplementation>? _surface;
   Occasion _occasion = Occasion.auto;
@@ -641,15 +641,55 @@ class _ReaderPageState extends State<ReaderPage>
     );
   }
 
-  Widget _buildTouchDemoPanel({required bool vertical}) {
+  Widget _buildOccasionPanel() => Column(
+    key: const Key('occasion-panel'),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Remote'),
+      const SizedBox(height: 12),
+      ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 390),
+        child: DropdownButtonFormField<Occasion>(
+          isExpanded: true,
+          initialValue: _occasion,
+          decoration: const InputDecoration(
+            labelText: 'Occasion / A2UI layout',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: Occasion.values.map((o) {
+            final locked =
+                o == Occasion.askAi && _aiService == null && !_hasSavedAiLayout;
+            final disabledColor = Theme.of(context).disabledColor;
+            return DropdownMenuItem(
+              value: o,
+              enabled: !locked,
+              child: locked
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 16,
+                          color: disabledColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(o.label, style: TextStyle(color: disabledColor)),
+                      ],
+                    )
+                  : Text(o.label),
+            );
+          }).toList(),
+          onChanged: _changeOccasion,
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildUserPanel({required bool vertical}) {
     final controls = <Widget>[
-      SizedBox(
-        width: vertical
-            ? double.infinity
-            : math.min(
-                390.0,
-                math.max(0.0, MediaQuery.sizeOf(context).width - 90.0),
-              ),
+      ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 390),
         child: DropdownButtonFormField<_DemoUser>(
           key: const Key('demo-user-picker'),
           initialValue: _demoUser,
@@ -690,47 +730,6 @@ class _ReaderPageState extends State<ReaderPage>
           onChanged: _changeDemoUser,
         ),
       ),
-      SizedBox(
-        width: vertical
-            ? double.infinity
-            : math.min(
-                260.0,
-                math.max(0.0, MediaQuery.sizeOf(context).width - 90.0),
-              ),
-        child: DropdownButtonFormField<Occasion>(
-          isExpanded: true,
-          initialValue: _occasion,
-          decoration: const InputDecoration(
-            labelText: 'Occasion / A2UI layout',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-          items: Occasion.values.map((o) {
-            final locked =
-                o == Occasion.askAi && _aiService == null && !_hasSavedAiLayout;
-            final disabledColor = Theme.of(context).disabledColor;
-            return DropdownMenuItem(
-              value: o,
-              enabled: !locked,
-              child: locked
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.lock_outline,
-                          size: 16,
-                          color: disabledColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(o.label, style: TextStyle(color: disabledColor)),
-                      ],
-                    )
-                  : Text(o.label),
-            );
-          }).toList(),
-          onChanged: _changeOccasion,
-        ),
-      ),
       Tooltip(
         message: 'Open GenUI Touch',
         child: OutlinedButton.icon(
@@ -751,40 +750,86 @@ class _ReaderPageState extends State<ReaderPage>
         label: const Text('Debug'),
       ),
     ];
-    return Card(
-      elevation: 16,
-      shadowColor: Colors.black.withValues(alpha: 0.55),
-      shape: const RoundedRectangleBorder(),
-      child: ExpansionTile(
-        key: const Key('touch-demo-panel'),
-        initiallyExpanded: true,
-        shape: const Border(),
-        collapsedShape: const Border(),
-        title: const Text('Touch demo'),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        children: [
-          if (vertical)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 12,
-              children: controls,
-            )
-          else
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: controls,
-            ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(_demoUser.description),
+    return Column(
+      key: const Key('user-panel'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('Local'),
+        const SizedBox(height: 12),
+        if (vertical)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 12,
+            children: controls,
+          )
+        else
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: controls,
           ),
-        ],
-      ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(_demoUser.description),
+        ),
+      ],
     );
   }
+
+  Widget _buildDemoPanels({required bool vertical}) => Card(
+    elevation: 16,
+    shadowColor: Colors.black.withValues(alpha: 0.55),
+    color: Theme.of(context).colorScheme.inverseSurface,
+    shape: const RoundedRectangleBorder(),
+    child: ExpansionTile(
+      key: const Key('touch-demo-panel'),
+      initiallyExpanded: true,
+      onExpansionChanged: (expanded) =>
+          setState(() => _demoExpanded = expanded),
+      shape: const Border(),
+      collapsedShape: const Border(),
+      tilePadding: EdgeInsets.zero,
+      showTrailingIcon: false,
+      title: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        color: Theme.of(context).colorScheme.inverseSurface,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Touch demo',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onInverseSurface,
+                ),
+              ),
+            ),
+            Icon(
+              _demoExpanded ? Icons.expand_less : Icons.expand_more,
+              color: Theme.of(context).colorScheme.onInverseSurface,
+            ),
+          ],
+        ),
+      ),
+      children: [
+        Container(
+          width: double.infinity,
+          color: Theme.of(context).colorScheme.surface,
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildOccasionPanel(),
+              const SizedBox(height: 24),
+              _buildUserPanel(vertical: vertical),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 
   void _showFeedControls() {
     showDialog<void>(
@@ -1004,7 +1049,7 @@ class _ReaderPageState extends State<ReaderPage>
               children: [
                 SizedBox(height: wide ? 4 : 12),
                 if (!wide) ...[
-                  _buildTouchDemoPanel(vertical: false),
+                  _buildDemoPanels(vertical: false),
                   const SizedBox(height: 12),
                 ],
                 // The article cards, headings, actions, and occasion-specific
@@ -1051,7 +1096,7 @@ class _ReaderPageState extends State<ReaderPage>
                       width: 360,
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-                        child: _buildTouchDemoPanel(vertical: true),
+                        child: _buildDemoPanels(vertical: true),
                       ),
                     ),
                   ],

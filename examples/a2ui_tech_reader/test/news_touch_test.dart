@@ -91,12 +91,41 @@ void main() {
     await tester.pumpAndSettle();
 
     final panel = find.byKey(const Key('touch-demo-panel'));
+    final occasionPanel = find.byKey(const Key('occasion-panel'));
+    final userPanel = find.byKey(const Key('user-panel'));
     final user = find.byKey(const Key('demo-user-picker'));
     final occasion = find.byType(DropdownButtonFormField<Occasion>);
     expect(tester.getTopLeft(panel).dx, greaterThan(1200));
+    expect(tester.getTopLeft(occasionPanel).dx, greaterThan(1200));
+    expect(tester.getTopLeft(userPanel).dx, greaterThan(1200));
     expect(
       tester.getTopLeft(occasion).dy,
-      greaterThan(tester.getTopLeft(user).dy),
+      lessThan(tester.getTopLeft(user).dy),
+    );
+    expect(
+      find.descendant(of: occasionPanel, matching: occasion),
+      findsOneWidget,
+    );
+    expect(find.descendant(of: userPanel, matching: user), findsOneWidget);
+    expect(find.descendant(of: panel, matching: occasionPanel), findsOneWidget);
+    expect(find.descendant(of: panel, matching: userPanel), findsOneWidget);
+    expect(
+      find.descendant(of: panel, matching: find.byType(Card)),
+      findsNothing,
+    );
+    expect(find.text('Remote'), findsOneWidget);
+    expect(find.text('Local'), findsOneWidget);
+    final header = tester.widget<Container>(
+      find
+          .ancestor(
+            of: find.text('Touch demo'),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(
+      header.color,
+      Theme.of(tester.element(panel)).colorScheme.inverseSurface,
     );
     final card = tester.widget<Card>(
       find.ancestor(of: panel, matching: find.byType(Card)).first,
@@ -115,6 +144,10 @@ void main() {
     expect(panelScroll.padding, const EdgeInsets.fromLTRB(20, 24, 20, 32));
     expect(find.text('The future, in focus.'), findsNothing);
     expect(find.text('Live RSS stories · rendered by A2UI'), findsOneWidget);
+    await tester.tap(find.text('Touch demo'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('occasion-panel')), findsNothing);
+    expect(find.byKey(const Key('user-panel')), findsNothing);
     await tester.tap(find.byKey(const Key('feed-settings-button')));
     await tester.pumpAndSettle();
     expect(find.text('RSS preset'), findsOneWidget);
