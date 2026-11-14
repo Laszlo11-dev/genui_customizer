@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 
@@ -6,30 +10,76 @@ import 'models.dart';
 class RssService {
   RssService({http.Client? client}) : _client = client ?? http.Client();
   final http.Client _client;
+  static const maxFeedBytes = 2 * 1024 * 1024;
+  static const _requestTimeout = Duration(seconds: 15);
 
-  Future<List<NewsItem>> load(String input) async {
+  Future<List<NewsItem>> load(String input, {String? source}) async {
     final url = Uri.tryParse(input.trim());
     if (url == null ||
         (url.scheme != 'http' && url.scheme != 'https') ||
         url.host.isEmpty) {
       throw const FormatException('Use a valid HTTP(S) RSS or Atom URL.');
     }
-    final response = await _client
-        .get(
-          url,
-          headers: {
-            'Accept':
-                'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    const accept =
+        'application/rss+xml, application/atom+xml, application/xml, text/xml, */*';
+    if (kIsWeb) {
+      // Keep the browser's original GET path. BrowserClient buffers responses,
+      // so the size check happens after the browser finishes the fetch.
+      final response = await _client
+          .get(url, headers: {'Accept': accept})
+          .timeout(_requestTimeout);
+      if (response.bodyBytes.length > maxFeedBytes) {
+        throw const FormatException('Feed is too large (2 MB limit).');
+      }
+      if (response.statusCode != 200) {
+        throw Exception('Feed returned HTTP ${response.statusCode}');
+      }
+      return compute(_parseFeed, (response.body, source ?? url.host, url));
+    }
+    final request = http.Request('GET', url)..headers['Accept'] = accept;
+    final clock = Stopwatch()..start();
+    final streamed = await _client.send(request).timeout(_requestTimeout);
+    final response = await _readLimited(streamed, clock);
     if (response.statusCode != 200) {
       throw Exception('Feed returned HTTP ${response.statusCode}');
     }
-    return parse(response.body, source: url.host);
+    return compute(_parseFeed, (response.body, source ?? url.host, url));
   }
 
-  static List<NewsItem> parse(String xml, {required String source}) {
+  static Future<http.Response> _readLimited(
+    http.StreamedResponse response,
+    Stopwatch clock,
+  ) async {
+    final bytes = BytesBuilder(copy: false);
+    final chunks = StreamIterator<List<int>>(response.stream);
+    try {
+      while (true) {
+        final remaining = _requestTimeout - clock.elapsed;
+        if (remaining <= Duration.zero) {
+          throw TimeoutException('Feed timed out');
+        }
+        if (!await chunks.moveNext().timeout(remaining)) break;
+        final chunk = chunks.current;
+        if (bytes.length + chunk.length > maxFeedBytes) {
+          throw const FormatException('Feed is too large (2 MB limit).');
+        }
+        bytes.add(chunk);
+      }
+    } finally {
+      await chunks.cancel();
+    }
+    return http.Response.bytes(
+      bytes.takeBytes(),
+      response.statusCode,
+      headers: response.headers,
+    );
+  }
+
+  static List<NewsItem> parse(
+    String xml, {
+    required String source,
+    Uri? baseUri,
+  }) {
     final doc = XmlDocument.parse(xml);
     final nodes = doc.descendants.whereType<XmlElement>().where(
       (e) => e.name.local == 'item' || e.name.local == 'entry',
@@ -45,18 +95,32 @@ class RssService {
 
       final title = childText('title');
       var link = childText('link');
+      XmlElement? linkElement;
+      final links = node.children.whereType<XmlElement>().where(
+        (e) => e.name.local == 'link',
+      );
       if (link.isEmpty) {
-        for (final e in node.children.whereType<XmlElement>()) {
-          if (e.name.local == 'link') {
-            link = e.getAttribute('href') ?? '';
-            if (e.getAttribute('rel') == 'alternate') break;
-          }
-        }
+        final alternate = links.where(
+          (e) => e.getAttribute('rel') == 'alternate',
+        );
+        linkElement = alternate.isNotEmpty
+            ? alternate.first
+            : links.where((e) => e.getAttribute('rel') == null).firstOrNull;
+        link = linkElement?.getAttribute('href') ?? '';
+      } else {
+        linkElement = links
+            .where((e) => e.innerText.trim() == link)
+            .firstOrNull;
       }
-      final uri = Uri.tryParse(link);
+      final parsed = Uri.tryParse(link);
+      final effectiveBase = _baseFor(linkElement ?? node, baseUri);
+      final uri = parsed == null
+          ? null
+          : (effectiveBase?.resolveUri(parsed) ?? parsed);
       if (title.isEmpty ||
           uri == null ||
-          (uri.scheme != 'https' && uri.scheme != 'http')) {
+          (uri.scheme != 'https' && uri.scheme != 'http') ||
+          uri.host.isEmpty) {
         continue;
       }
       final description = childText('description').isNotEmpty
@@ -111,8 +175,9 @@ class RssService {
           categories: categories.toList(),
         ),
       );
+      if (items.length == 30) break;
     }
-    return items.take(30).toList();
+    return items;
   }
 
   static DateTime? _parseDate(String value) {
@@ -156,5 +221,23 @@ class RssService {
     ).subtract(Duration(minutes: offsetMinutes));
   }
 
+  static Uri? _baseFor(XmlElement element, Uri? feedUrl) {
+    var base = feedUrl;
+    for (final ancestor in [
+      ...element.ancestors.whereType<XmlElement>().toList().reversed,
+      element,
+    ]) {
+      final declared = ancestor.getAttribute('xml:base');
+      if (declared != null) {
+        final relative = Uri.tryParse(declared);
+        if (relative != null) base = base?.resolveUri(relative) ?? relative;
+      }
+    }
+    return base;
+  }
+
   void dispose() => _client.close();
 }
+
+List<NewsItem> _parseFeed((String, String, Uri) input) =>
+    RssService.parse(input.$1, source: input.$2, baseUri: input.$3);

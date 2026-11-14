@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
@@ -15,6 +16,7 @@ import 'news_gallery.dart';
 import 'news_touch.dart';
 import 'news_filter.dart';
 import 'rss_service.dart';
+import 'readable_color.dart';
 import 'runtime_key_stub.dart'
     if (dart.library.io) 'runtime_key_io.dart'
     as runtime_key;
@@ -76,6 +78,8 @@ class ReaderPage extends StatefulWidget {
 
 class _ReaderPageState extends State<ReaderPage>
     with SingleTickerProviderStateMixin {
+  List<FeedPreset> get _availableFeeds => kIsWeb ? webFeedPresets : feedPresets;
+
   final _rss = RssService();
   GeminiLayoutService? _aiService;
   AiLayout? _aiLayout;
@@ -102,6 +106,7 @@ class _ReaderPageState extends State<ReaderPage>
   _DemoUser _demoUser = _DemoUser.tenantEditor;
   String _source = feedPresets.first.name;
   List<NewsItem> _articles = [];
+  String? _articlesSource;
   List<NewsItem> _renderedArticles = [];
   List<Map<String, Object?>> _messages = [];
   String? _error;
@@ -164,9 +169,15 @@ class _ReaderPageState extends State<ReaderPage>
     _render();
     _refresh();
     try {
+      final savedAi = (await _loadRemote(Occasion.askAi))?.data ?? const {};
       final available =
-          (await _remoteStore.load(Occasion.askAi.name))?.data['aiLayout']
-              is Map;
+          _readOccasionData<AiLayout?>(
+            savedAi,
+            'aiLayout',
+            null,
+            AiLayout.fromJson,
+          ) !=
+          null;
       if (mounted) setState(() => _hasSavedAiLayout = available);
     } catch (error) {
       debugPrint('Could not load saved AI occasion: $error');
@@ -190,9 +201,9 @@ class _ReaderPageState extends State<ReaderPage>
   Future<bool> _loadConfigurationContext() async {
     final edition = _active;
     final user = _demoUser;
-    final storedRemote = await _remoteStore.load(edition.name);
+    final storedRemote = await _loadRemote(edition);
     final legacyProfile = storedRemote == null && edition == Occasion.everyday
-        ? await const ReaderTouchStorage().load()
+        ? await _loadLegacyProfile()
         : null;
     final remote =
         storedRemote ??
@@ -207,29 +218,41 @@ class _ReaderPageState extends State<ReaderPage>
             'composition': compositionFor(edition).toJson(),
           },
         );
-    final local = user == _DemoUser.tenantEditor
-        ? null
-        : await _localStore.load(user.name, 'preferences');
+    final local = await _loadLocal(user);
     if (!mounted || edition != _active || user != _demoUser) return false;
     final data = remote.data;
+    final style = _readOccasionData(
+      data,
+      'style',
+      styleFor(edition),
+      PortalStyle.fromJson,
+    );
+    final palette = _readOccasionData(
+      data,
+      'palette',
+      paletteFor(edition),
+      OccasionPalette.fromJson,
+    );
+    final composition = _readOccasionData(
+      data,
+      'composition',
+      compositionFor(edition),
+      OccasionComposition.fromJson,
+    );
+    final savedAi = edition == Occasion.askAi
+        ? _readOccasionData<AiLayout?>(
+            data,
+            'aiLayout',
+            null,
+            AiLayout.fromJson,
+          )
+        : null;
     _remoteConfiguration = remote;
-    _occasionStyle = data['style'] is Map
-        ? PortalStyle.fromJson((data['style'] as Map).cast<String, Object?>())
-        : styleFor(edition);
-    _occasionPalette = data['palette'] is Map
-        ? OccasionPalette.fromJson(
-            (data['palette'] as Map).cast<String, Object?>(),
-          )
-        : paletteFor(edition);
-    _occasionComposition = data['composition'] is Map
-        ? OccasionComposition.fromJson(
-            (data['composition'] as Map).cast<String, Object?>(),
-          )
-        : compositionFor(edition);
-    if (edition == Occasion.askAi && data['aiLayout'] is Map) {
-      _aiLayout = AiLayout.fromJson(
-        (data['aiLayout'] as Map).cast<String, Object?>(),
-      );
+    _occasionStyle = style;
+    _occasionPalette = palette;
+    _occasionComposition = composition;
+    if (savedAi != null) {
+      _aiLayout = savedAi;
       _aiPrompt = data['aiPrompt'] as String? ?? _aiPrompt;
     }
     _touch.useConfigurations(
@@ -263,6 +286,51 @@ class _ReaderPageState extends State<ReaderPage>
       },
     );
     return true;
+  }
+
+  Future<TouchConfiguration?> _loadRemote(Occasion edition) async {
+    try {
+      return await _remoteStore.load(edition.name);
+    } catch (error) {
+      debugPrint('Could not load ${edition.name} appearance: $error');
+      return null;
+    }
+  }
+
+  Future<TouchProfile?> _loadLegacyProfile() async {
+    try {
+      return await const ReaderTouchStorage().load();
+    } catch (error) {
+      debugPrint('Could not load legacy appearance: $error');
+      return null;
+    }
+  }
+
+  Future<TouchConfiguration?> _loadLocal(_DemoUser user) async {
+    if (user == _DemoUser.tenantEditor) return null;
+    try {
+      return await _localStore.load(user.name, 'preferences');
+    } catch (error) {
+      debugPrint('Could not load ${user.name} preferences: $error');
+      return null;
+    }
+  }
+
+  T _readOccasionData<T>(
+    Map<String, Object?> data,
+    String key,
+    T fallback,
+    T Function(Map<String, Object?>) parse,
+  ) {
+    final raw = data[key];
+    if (raw == null) return fallback;
+    try {
+      if (raw is! Map) throw const FormatException('Expected an object.');
+      return parse(raw.cast<String, Object?>());
+    } catch (error) {
+      debugPrint('Invalid saved $key, using defaults: $error');
+      return fallback;
+    }
   }
 
   Future<bool> _resolveUnsavedConfiguration() async {
@@ -384,6 +452,7 @@ class _ReaderPageState extends State<ReaderPage>
       compact: _compact,
       loading: _loading,
       error: _error,
+      staleSource: _articlesSource,
       aiLayout: _aiLayout,
       aiError: _aiError,
       occasionPalette: _occasionPalette,
@@ -421,26 +490,33 @@ class _ReaderPageState extends State<ReaderPage>
 
   Future<void> _refresh() async {
     final id = ++_requestId;
+    final requestedSource = _sourceController.text.trim();
+    final presetSource = _availableFeeds
+        .where((feed) => feed.url == requestedSource)
+        .firstOrNull
+        ?.name;
     setState(() {
       _loading = true;
       _error = null;
     });
     _render();
     try {
-      final result = await _rss.load(_sourceController.text);
+      final result = await _rss.load(requestedSource, source: presetSource);
       if (!mounted || id != _requestId) return;
       setState(() {
         _articles = result;
+        _articlesSource = presetSource ?? requestedSource;
         _loading = false;
       });
       _render();
     } catch (e) {
       if (!mounted || id != _requestId) return;
+      debugPrint('Could not load RSS feed: $e');
       setState(() {
         _loading = false;
         _error = kIsWeb
-            ? '$e. This feed may block browser requests (CORS). Try another source or a same-origin feed gateway.'
-            : '$e';
+            ? 'Could not load this feed in the browser. Try another source or check the connection.'
+            : 'Could not load this feed. Check the URL and connection, then retry.';
       });
       _render();
     }
@@ -448,7 +524,7 @@ class _ReaderPageState extends State<ReaderPage>
 
   void _choosePreset(String? name) {
     if (name == null) return;
-    final preset = feedPresets.firstWhere((p) => p.name == name);
+    final preset = _availableFeeds.firstWhere((p) => p.name == name);
     setState(() {
       _source = name;
       _sourceController.text = preset.url;
@@ -584,7 +660,10 @@ class _ReaderPageState extends State<ReaderPage>
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             SizedBox(
-              width: 390,
+              width: math.min(
+                390.0,
+                math.max(0.0, MediaQuery.sizeOf(context).width - 90.0),
+              ),
               child: DropdownButtonFormField<_DemoUser>(
                 key: const Key('demo-user-picker'),
                 initialValue: _demoUser,
@@ -726,7 +805,7 @@ class _ReaderPageState extends State<ReaderPage>
             child: DropdownButtonFormField<String>(
               isExpanded: true,
               key: ValueKey(_source),
-              initialValue: feedPresets.any((p) => p.name == _source)
+              initialValue: _availableFeeds.any((p) => p.name == _source)
                   ? _source
                   : null,
               decoration: const InputDecoration(
@@ -734,7 +813,7 @@ class _ReaderPageState extends State<ReaderPage>
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
-              items: feedPresets
+              items: _availableFeeds
                   .map(
                     (p) => DropdownMenuItem(value: p.name, child: Text(p.name)),
                   )
@@ -827,11 +906,11 @@ class _ReaderPageState extends State<ReaderPage>
         ? (_occasionStyle ?? styleFor(_active))
         : styleForAi(layout);
     final pageBackground = _pageBackground(style);
-    final pageInk = pageBackground == style.background
-        ? style.ink
-        : pageBackground.computeLuminance() < 0.18
-        ? Colors.white
-        : const Color(0xFF192336);
+    final pageInk = readableColor(
+      pageBackground == style.background ? style.ink : const Color(0xFF192336),
+      pageBackground,
+    );
+    final readableAccent = readableColor(style.accent, pageBackground);
     final theme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
@@ -864,14 +943,18 @@ class _ReaderPageState extends State<ReaderPage>
         appBar: AppBar(
           title: Row(
             children: [
-              Icon(Icons.auto_stories_outlined, color: style.accent),
+              Icon(Icons.auto_stories_outlined, color: readableAccent),
               const SizedBox(width: 10),
-              const Text(
-                'A2UI / TECH READER',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
-                  fontSize: 17,
+              const Expanded(
+                child: Text(
+                  'A2UI / TECH READER',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                    fontSize: 17,
+                  ),
                 ),
               ),
             ],
@@ -920,7 +1003,7 @@ class _ReaderPageState extends State<ReaderPage>
                         style.kicker,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: style.accent,
+                          color: readableAccent,
                           letterSpacing: 2,
                           fontSize: 12,
                         ),

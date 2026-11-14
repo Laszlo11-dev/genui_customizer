@@ -28,12 +28,21 @@ class FeedPreset {
   final String url;
 }
 
+const registerFeedPreset = FeedPreset(
+  'The Register',
+  'https://api.theregister.com/api/v1/article?orderBy=published&site_id=2&remapper=rss&content=node',
+);
+const nasaFeedPreset = FeedPreset('NASA', 'https://www.nasa.gov/feed/');
+
 const feedPresets = <FeedPreset>[
-  FeedPreset('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/index'),
+  registerFeedPreset,
   FeedPreset('The Verge', 'https://www.theverge.com/rss/index.xml'),
-  FeedPreset('NASA', 'https://www.nasa.gov/feed/'),
+  nasaFeedPreset,
   FeedPreset('Hacker News', 'https://news.ycombinator.com/rss'),
 ];
+
+// These presets allow browser requests from the app's origin.
+const webFeedPresets = <FeedPreset>[registerFeedPreset, nasaFeedPreset];
 
 enum Occasion { auto, everyday, christmas, winter, easter, askAi }
 

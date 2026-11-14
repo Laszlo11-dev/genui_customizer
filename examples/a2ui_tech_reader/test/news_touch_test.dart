@@ -25,6 +25,71 @@ class _MemoryStorage implements TouchStorage {
 }
 
 void main() {
+  testWidgets('invalid saved occasion data falls back to a working edition', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await const SharedPreferencesTouchRemoteStore().save(
+      TouchConfiguration(
+        id: Occasion.christmas.name,
+        name: 'Christmas',
+        profile: const TouchProfile(),
+        data: const {
+          'style': {'headline': 42},
+          'palette': {'accent': 42},
+          'composition': {'layout': 'unknown'},
+        },
+      ),
+    );
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<Occasion>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Christmas').last);
+    await tester.pumpAndSettle();
+    expect(find.text('The holiday edit'), findsOneWidget);
+    expect(find.byType(A2uiSurface), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Touch demo controls fit a narrow screen', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('corrupt saved configuration does not block occasion switching', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'genui_touch.remote.v1.christmas': '{broken json',
+    });
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<Occasion>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Christmas').last);
+    await tester.pumpAndSettle();
+    expect(find.text('The holiday edit'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   test(
     'demo user configurations match their descriptions and seed once',
     () async {

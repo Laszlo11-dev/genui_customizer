@@ -17,6 +17,7 @@ void main() {
         link: Uri.parse('https://example.org/a'),
         source: 'Example',
         summary: 'A useful gadget',
+        imageUrl: 'https://example.org/photo.jpg',
       ),
       NewsItem(
         title: 'Solar design',
@@ -59,6 +60,12 @@ void main() {
         ),
       );
       expect(find.text('A new laptop'), findsOneWidget);
+      final image = tester.widget<Image>(find.byType(Image).first);
+      final networkImage = image.image as NetworkImage;
+      expect(
+        networkImage.webHtmlElementStrategy,
+        WebHtmlElementStrategy.fallback,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
       processor.dispose();
     }

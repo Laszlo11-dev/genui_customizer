@@ -135,4 +135,48 @@ void main() {
       expect(nodes.any((n) => n['component'] == 'Text'), true);
     }
   });
+
+  test('feed error keeps last loaded stories with their source', () {
+    final messages = NewsA2uiBuilder.build(
+      [
+        NewsItem(
+          title: 'Earlier story',
+          source: 'Example',
+          link: Uri.parse('https://example.org/story'),
+        ),
+      ],
+      Occasion.everyday,
+      error: 'ClientException: Failed to fetch',
+      staleSource: 'The Register',
+    );
+    final update = messages.last['updateComponents'] as Map<String, Object?>;
+    final nodes = update['components'] as List<Map<String, Object?>>;
+    expect(nodes.any((node) => node['title'] == 'Earlier story'), isTrue);
+    expect(nodes.any((node) => node['eyebrow'] == 'From The Register'), isTrue);
+    expect(
+      nodes.any(
+        (node) =>
+            node['text'] ==
+            'Could not refresh the selected feed. Showing the last loaded stories.',
+      ),
+      isTrue,
+    );
+    expect(
+      nodes.any((node) => node['text'] == 'ClientException: Failed to fetch'),
+      isFalse,
+    );
+    expect(nodes.any((node) => node['text'] == 'Feed unavailable'), isFalse);
+  });
+
+  test('rejects invalid saved composition values eagerly', () {
+    expect(
+      () => OccasionComposition.fromJson({
+        'layout': 'christmas',
+        'labels': {'lead': 42},
+        'terms': ['gift'],
+        'columns': 2,
+      }),
+      throwsFormatException,
+    );
+  });
 }

@@ -2,6 +2,8 @@ import 'package:a2ui_tech_reader/models.dart';
 import 'package:a2ui_tech_reader/news_filter.dart';
 import 'package:a2ui_tech_reader/rss_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   test('parses RSS 2.0', () {
@@ -24,12 +26,76 @@ void main() {
     expect(article.imageUrl, isNull);
   });
 
+  test('retains a media image for an RSS story', () {
+    const rss = '''<rss xmlns:media="http://search.yahoo.com/mrss/">
+      <channel><item><title>Hardware</title>
+      <link>https://example.org/a</link>
+      <media:content url="https://cdn.example.org/photo.jpg" type="image/jpeg"/>
+      </item></channel></rss>''';
+    final item = RssService.parse(rss, source: 'Example').single;
+    expect(item.imageUrl, 'https://cdn.example.org/photo.jpg');
+  });
+
   test('parses Atom links', () {
     const xml =
         '''<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Atom article</title><link href="https://example.org/b" rel="alternate"/><summary>News</summary></entry></feed>''';
     final result = RssService.parse(xml, source: 'Atom');
     expect(result.single.title, 'Atom article');
     expect(result.single.link.path, '/b');
+  });
+
+  test('resolves relative links and prefers the Atom alternate link', () {
+    const xml = '''<feed><entry><title>Article</title>
+      <link rel="alternate" href="/stories/42"/>
+      <link rel="self" href="https://example.org/api/42"/>
+      </entry></feed>''';
+    final items = RssService.parse(
+      xml,
+      source: 'Example',
+      baseUri: Uri.parse('https://example.org/feed.xml'),
+    );
+    expect(items.single.link.toString(), 'https://example.org/stories/42');
+  });
+
+  test('resolves xml:base on an Atom entry', () {
+    const xml = '''<feed xml:base="https://example.org/news/">
+      <entry><title>Article</title><link href="story"/></entry>
+      </feed>''';
+    final items = RssService.parse(
+      xml,
+      source: 'Example',
+      baseUri: Uri.parse('https://example.org/feed.xml'),
+    );
+    expect(items.single.link.toString(), 'https://example.org/news/story');
+  });
+
+  test('rejects an oversized feed before XML parsing', () async {
+    final service = RssService(
+      client: MockClient(
+        (_) async => http.Response('x' * (RssService.maxFeedBytes + 1), 200),
+      ),
+    );
+    addTearDown(service.dispose);
+    await expectLater(
+      service.load('https://example.org/feed.xml'),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('loads and parses a streamed feed response', () async {
+    final service = RssService(
+      client: MockClient(
+        (_) async => http.Response(
+          '<rss><channel><item><title>Loaded</title>'
+          '<link>/article</link></item></channel></rss>',
+          200,
+        ),
+      ),
+    );
+    addTearDown(service.dispose);
+    final items = await service.load('https://example.org/feed.xml');
+    expect(items.single.title, 'Loaded');
+    expect(items.single.link.toString(), 'https://example.org/article');
   });
 
   test('retains RSS and Atom item categories', () {

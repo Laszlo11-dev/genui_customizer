@@ -31,6 +31,8 @@ Windows and web platform runners are included in the example.
 
 `RssService` downloads and parses RSS or Atom into `NewsItem`. The Flutter shell filters these items for search and selects an occasion. `NewsA2uiBuilder.build` turns the resulting articles into A2UI 1.0 `createSurface` and `updateComponents` messages. The host registers the basic catalog and the local `newsGalleryCatalog`; the official `A2uiSurface` renders the news stream. Article buttons emit A2UI actions; the host opens the corresponding original URL.
 
+Feed downloads have a 15-second total timeout and a 2 MB response limit. Relative article links are resolved against the feed URL and any `xml:base` value. If refreshing fails after a successful load, the reader shows the error above the last loaded stories and identifies their source.
+
 RSS `<category>` and Atom `<category term="…">` tags are retained on each `NewsItem`. The **Hide politics & war** chip is enabled by default. It filters explicit political and war tags, plus clear political signals in titles. The broad `Policy` tag alone does not hide an article because it also covers technology regulation. This is a heuristic filter, so ambiguous or untagged stories may still need manual review. The chip can be turned off to show the full feed.
 
 The local gallery in `lib/news_gallery.dart` defines `NewsPage`, `NewsSection`, `NewsStory`, and `NewsGrid`. Their schemas expose presentation values in A2UI: the whole page background, component colors, type sizes and weight, card shape and spacing, image position and height, button style, elevation, grid columns and gaps. Touch edits only the presentation properties listed in `lib/news_touch.dart` as defaults for each catalog type. Content, article links, and actions remain outside its contract.
@@ -53,6 +55,6 @@ Use the **data object** button in the app bar to inspect the generated A2UI JSON
 
 ## Web feeds
 
-A browser can fetch only RSS feeds that permit the app's origin under CORS. A blocked feed appears as an A2UI error state. For a reliable hosted demo, use feeds with permissive CORS or a same-origin gateway under your control. Windows does not have browser CORS restrictions.
+A browser can fetch only RSS feeds that permit the app's origin under CORS. The web presets are The Register and NASA; The Register is the default. Other feed URLs can be entered manually, but a blocked custom feed appears as an A2UI error state. For a reliable hosted demo, use feeds with permissive CORS or a same-origin gateway under your control. Windows does not have browser CORS restrictions. Web story images can fall back to HTML image elements when their hosts do not permit Flutter's image fetch; these elements have different rendering and capture behavior.
 
 The presets provide technology-oriented sources; a general feed may still contain unrelated articles. Images and dates are optional and omitted when absent. Article buttons open publisher pages.

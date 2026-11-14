@@ -5,6 +5,8 @@ import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
 
+import 'readable_color.dart';
+
 /// Presentation-only catalog. Its properties are intentionally literal-friendly
 /// so a later Touch integration can expose them without changing the renderer.
 const newsGalleryCatalogId =
@@ -66,20 +68,30 @@ final _section = ComponentImplementation(
     required: ['title'],
   ),
   builder: (context, node, props, buildChild) {
-    final accent = _readColor(
-      props.string('accentColor'),
-      Theme.of(context).colorScheme.primary,
+    final background = _readColor(
+      props.string('backgroundColor'),
+      Theme.of(context).colorScheme.surface,
     );
-    final ink = _readColor(
-      props.string('textColor'),
-      Theme.of(context).colorScheme.onSurface,
+    final accent = readableColor(
+      _readColor(
+        props.string('accentColor'),
+        Theme.of(context).colorScheme.primary,
+      ),
+      background,
+    );
+    final ink = readableColor(
+      _readColor(
+        props.string('textColor'),
+        Theme.of(context).colorScheme.onSurface,
+      ),
+      background,
     );
     final radius = _measure(props, 'cornerRadius', 0, 0, 40);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(_measure(props, 'padding', 0, 0, 48)),
       decoration: BoxDecoration(
-        color: _optionalColor(props.string('backgroundColor')),
+        color: background,
         borderRadius: BorderRadius.circular(radius),
       ),
       child: Column(
@@ -158,21 +170,21 @@ final _story = ComponentImplementation(
   ),
   builder: (context, node, props, buildChild) {
     final theme = Theme.of(context);
-    final ink = _readColor(
-      props.string('textColor'),
-      theme.colorScheme.onSurface,
-    );
-    final muted = _readColor(
-      props.string('mutedColor'),
-      ink.withValues(alpha: .7),
-    );
-    final accent = _readColor(
-      props.string('accentColor'),
-      theme.colorScheme.primary,
-    );
     final background = _readColor(
       props.string('backgroundColor'),
       theme.colorScheme.surface,
+    );
+    final ink = readableColor(
+      _readColor(props.string('textColor'), theme.colorScheme.onSurface),
+      background,
+    );
+    final muted = readableColor(
+      _readColor(props.string('mutedColor'), ink.withValues(alpha: .7)),
+      background,
+    );
+    final accent = readableColor(
+      _readColor(props.string('accentColor'), theme.colorScheme.primary),
+      background,
     );
     final border = _readColor(
       props.string('borderColor'),
@@ -195,6 +207,7 @@ final _story = ComponentImplementation(
         height: imageHeight,
         width: imagePosition == 'left' ? imageHeight * 1.15 : double.infinity,
         fit: imageFit,
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
         errorBuilder: (_, _, _) => Container(
           height: imageHeight,
           color: accent.withValues(alpha: .08),
@@ -216,7 +229,7 @@ final _story = ComponentImplementation(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: accent,
-          foregroundColor: background,
+          foregroundColor: readableColor(background, accent),
         ),
         child: Text(buttonLabel),
       ),

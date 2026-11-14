@@ -14,6 +14,7 @@ class NewsA2uiBuilder {
     bool compact = false,
     bool loading = false,
     String? error,
+    String? staleSource,
     AiLayout? aiLayout,
     String? aiError,
     OccasionPalette? occasionPalette,
@@ -148,7 +149,23 @@ class NewsA2uiBuilder {
     if (loading) {
       status('Loading stories…', 'Fetching the selected RSS / Atom feed.');
     } else if (error != null) {
-      status('Feed unavailable', error);
+      if (all.isNotEmpty) {
+        nodes.add({
+          'id': 'refresh_notice',
+          'component': 'Text',
+          'text':
+              'Could not refresh the selected feed. Showing the last loaded stories.',
+        });
+        children.add('refresh_notice');
+        section(
+          'last_loaded',
+          'Last loaded stories',
+          eyebrow: staleSource == null ? null : 'From $staleSource',
+        );
+        grid('last_loaded_grid', all, composition.columns);
+      } else {
+        status('Feed unavailable', error);
+      }
     } else if (all.isEmpty) {
       status(
         'No stories found',
@@ -338,11 +355,24 @@ class OccasionComposition {
     if (layout == Occasion.auto) {
       throw const FormatException('Auto is not an occasion composition.');
     }
+    final rawLabels = json['labels'];
+    final rawTerms = json['terms'];
+    final columns = json['columns'];
+    if (rawLabels is! Map ||
+        rawLabels.keys.any((key) => key is! String) ||
+        rawLabels.values.any((value) => value is! String) ||
+        rawTerms is! List ||
+        rawTerms.any((term) => term is! String) ||
+        columns is! int ||
+        columns < 1 ||
+        columns > 4) {
+      throw const FormatException('Invalid occasion composition.');
+    }
     return OccasionComposition(
       layout: layout,
-      labels: (json['labels'] as Map).cast<String, String>(),
-      terms: (json['terms'] as List).cast<String>(),
-      columns: json['columns'] as int,
+      labels: Map<String, String>.from(rawLabels),
+      terms: List<String>.from(rawTerms),
+      columns: columns,
     );
   }
 }
