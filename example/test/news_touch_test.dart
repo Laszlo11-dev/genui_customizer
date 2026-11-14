@@ -800,7 +800,8 @@ void main() {
       (contract) => contract.componentType == 'NewsStory',
     );
     expect(story.properties['buttonColor']?.kind, TouchValueKind.color);
-    touch.setGalleryDefault(story, 'buttonColor', '#C026D3');
+    touch.setGalleryDefault(story, 'backgroundColor', '#FFF1F2');
+    touch.setGalleryDefault(story, 'buttonColor', '#DB2777');
     touch.processAgentMessages(
       NewsA2uiBuilder.build([
         for (var i = 0; i < 2; i++)
@@ -814,7 +815,7 @@ void main() {
     final surface = processor.model.getSurface(NewsA2uiBuilder.surfaceId)!;
     expect(
       surface.componentsModel.get('story_0')?.toJson()['buttonColor'],
-      '#C026D3',
+      '#DB2777',
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -829,7 +830,7 @@ void main() {
           .style
           ?.backgroundColor
           ?.resolve({}),
-      const Color(0xFFC026D3),
+      const Color(0xFFDB2777),
     );
     expect(
       tester
@@ -837,7 +838,7 @@ void main() {
           .style
           ?.foregroundColor
           ?.resolve({}),
-      const Color(0xFFC026D3),
+      const Color(0xFFDB2777),
     );
     await tester.pumpWidget(const SizedBox.shrink());
   });

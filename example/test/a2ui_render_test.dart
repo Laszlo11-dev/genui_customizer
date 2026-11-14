@@ -96,7 +96,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Read original ↗'));
+    await tester.tap(find.text('Read original'));
     await tester.pump();
     expect(actionName, 'open_0');
     await tester.pumpWidget(const SizedBox.shrink());

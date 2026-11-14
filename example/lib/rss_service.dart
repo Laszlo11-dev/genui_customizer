@@ -168,7 +168,7 @@ class RssService {
         NewsItem(
           title: title,
           link: uri,
-          source: source,
+          source: childText('source').isEmpty ? source : childText('source'),
           summary: plain.length > 190 ? '${plain.substring(0, 187)}…' : plain,
           published: published,
           imageUrl: image,

@@ -164,6 +164,7 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
               leading: widget.onClose == null
                   ? null
                   : IconButton(
+                      key: const Key('genui-studio-close'),
                       tooltip: 'Close editor',
                       style: toolbarIconStyle,
                       onPressed: widget.onClose,

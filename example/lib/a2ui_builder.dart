@@ -77,7 +77,7 @@ class NewsA2uiBuilder {
         if (date != null)
           'date':
               '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-        'openLabel': 'Read original ↗',
+        'openLabel': 'Read original',
         'open': {
           'event': {'name': 'open_$index'},
         },
@@ -153,8 +153,7 @@ class NewsA2uiBuilder {
         nodes.add({
           'id': 'refresh_notice',
           'component': 'Text',
-          'text':
-              'Could not refresh the selected feed. Showing the last loaded stories.',
+          'text': 'Could not refresh the selected feed. Showing the last loaded stories.',
         });
         children.add('refresh_notice');
         section(

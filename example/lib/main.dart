@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:a2ui_core/a2ui_core.dart';
@@ -10,6 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'a2ui_builder.dart';
 import 'ai_layout.dart';
+import 'demo_feed.dart';
+import 'demo_tour.dart';
 import 'models.dart';
 import 'news_gallery.dart';
 import 'news_touch.dart';
@@ -58,19 +61,21 @@ void main() {
 }
 
 class TechReaderApp extends StatelessWidget {
-  const TechReaderApp({super.key, this.apiKey = ''});
+  const TechReaderApp({super.key, this.apiKey = '', this.openArticle});
   final String apiKey;
+  final Future<bool> Function(Uri)? openArticle;
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
     title: 'A2UI Tech Reader',
-    home: ReaderPage(apiKey: apiKey),
+    home: ReaderPage(apiKey: apiKey, openArticle: openArticle),
   );
 }
 
 class ReaderPage extends StatefulWidget {
-  const ReaderPage({super.key, this.apiKey = ''});
+  const ReaderPage({super.key, this.apiKey = '', this.openArticle});
   final String apiKey;
+  final Future<bool> Function(Uri)? openArticle;
   @override
   State<ReaderPage> createState() => _ReaderPageState();
 }
@@ -88,6 +93,15 @@ class _ReaderPageState extends State<ReaderPage>
   final _sourceController = TextEditingController(text: feedPresets.first.url);
   late MessageProcessor<ComponentImplementation> _processor;
   late final GenUiTouchController _touch;
+  late final DemoTourController _tour;
+  bool _tourStudioOpen = false;
+  List<NewsItem>? _tourPreviousArticles;
+  String? _tourPreviousArticlesSource;
+  String? _tourPreviousError;
+  Occasion? _tourPreviousOccasion;
+  _DemoUser? _tourPreviousUser;
+  AiLayout? _tourPreviousAiLayout;
+  String? _tourPreviousAiError;
   final TouchConfigurationStore _remoteStore =
       const SharedPreferencesTouchRemoteStore();
   final TouchLocalConfigurationStore _localStore =
@@ -146,13 +160,18 @@ class _ReaderPageState extends State<ReaderPage>
       showSelectionOutline: false,
     );
     _touch.onStudioRequested = _openTouchStudio;
+    _tour = DemoTourController(
+      scenes: introScript,
+      onStart: _startIntroTour,
+      onAction: _runIntroAction,
+      onStop: _stopIntroTour,
+    )..addListener(_onTourChanged);
     _processor = _newProcessor();
     _touch.attachProcessor(_processor);
-    _seedUsers = seedDemoLocalConfigurations(_localStore).catchError((
-      Object error,
-    ) {
-      debugPrint('Could not seed demo users: $error');
-    });
+    _seedUsers = seedDemoLocalConfigurations(_localStore)
+        .catchError((Object error) {
+          debugPrint('Could not seed demo users: $error');
+        });
     _initializeTouch();
   }
 
@@ -386,9 +405,8 @@ class _ReaderPageState extends State<ReaderPage>
         if (_active == Occasion.askAi && _aiLayout != null) {
           setState(() => _hasSavedAiLayout = true);
         }
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Occasion saved')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Occasion saved')));
       }
     } catch (error) {
       if (mounted) {
@@ -401,6 +419,7 @@ class _ReaderPageState extends State<ReaderPage>
 
   void _openTouchStudio() {
     if (!_touchReady) return;
+    if (_tour.active) _tourStudioOpen = true;
     showGenUiTouchStudio(
       context: context,
       controller: _touch,
@@ -408,7 +427,268 @@ class _ReaderPageState extends State<ReaderPage>
       galleryOnly: true,
       colorPalette: _demoUser == _DemoUser.emily ? _emilyPalette : null,
       onGalleryChanged: _render,
+      boundsPersistence: _tour.active
+          ? _TourStudioBounds(MediaQuery.sizeOf(context))
+          : const SharedPreferencesTouchStudioBoundsPersistence(),
+    ).whenComplete(() => _tourStudioOpen = false);
+  }
+
+  void _onTourChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _startIntroTour() async {
+    await _seedUsers;
+    _tourPreviousArticles = _articles;
+    _tourPreviousArticlesSource = _articlesSource;
+    _tourPreviousError = _error;
+    _tourPreviousOccasion = _occasion;
+    _tourPreviousUser = _demoUser;
+    _tourPreviousAiLayout = _aiLayout;
+    _tourPreviousAiError = _aiError;
+    ++_requestId; // A live feed response must not replace the recording fixture.
+    setState(() {
+      _articles = demoRssStories();
+      _articlesSource = 'Curated RSS snapshot';
+      _error = null;
+      _loading = false;
+      _occasion = Occasion.everyday;
+      _demoUser = _DemoUser.fred;
+      _aiLayout = null;
+      _aiError = null;
+      _occasionStyle = styleFor(Occasion.everyday);
+      _occasionPalette = paletteFor(Occasion.everyday);
+      _occasionComposition = compositionFor(Occasion.everyday);
+    });
+    // The tour uses seeded, temporary profiles. Existing saved preferences are
+    // restored when it closes and are never overwritten by the recording.
+    _touch.useConfigurations(
+      remote: const TouchProfile.empty(),
+      local: const TouchProfile.empty(),
+      editRemote: false,
+      label: 'Demo: Fred',
+      saveEditedProfile: (_) async {},
     );
+    _render();
+  }
+
+  Future<void> _runIntroAction(DemoAction action) async {
+    switch (action) {
+      case DemoAction.showChristmas:
+        await _setTourOccasion(Occasion.christmas);
+      case DemoAction.showWinterGames:
+        await _setTourOccasion(Occasion.winter);
+      case DemoAction.showJoe:
+        await _setTourUser(_DemoUser.joe);
+      case DemoAction.showEmily:
+        await _setTourUser(_DemoUser.emily);
+      case DemoAction.openStoryStudio:
+        _touch.select(
+          const TouchSelection(
+            surfaceId: NewsA2uiBuilder.surfaceId,
+            componentId: 'story_0',
+            catalogId: newsGalleryCatalogId,
+            componentType: 'NewsStory',
+            instanceId: 'story_0',
+            dataPath: '',
+          ),
+        );
+        await _visualClick(const Key('tour-touch-button'), 'Open Touch');
+        final button = _findTourElement(const Key('tour-touch-button'))?.widget;
+        if (button is OutlinedButton) button.onPressed?.call();
+      case DemoAction.makeButtonPink:
+        const fieldKey = Key('touch-color-field-buttonColor');
+        final field = await _waitForTourElement(fieldKey);
+        if (field != null) {
+          await Scrollable.ensureVisible(
+            field,
+            duration: const Duration(milliseconds: 350),
+            alignment: 0.5,
+          );
+          await _visualClick(fieldKey, 'Button color');
+          final colorField = _findTourElement(fieldKey)?.widget;
+          if (colorField is InkWell) colorField.onTap?.call();
+          const pinkKey = Key('touch-color-choice-raspberry');
+          final pink = await _waitForTourElement(pinkKey);
+          if (pink != null) {
+            await _visualClick(pinkKey, 'Choose pink');
+            final choice = _findTourElement(pinkKey)?.widget;
+            if (choice is InkWell) choice.onTap?.call();
+          }
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await _highlightReadButton('Now pink', const Color(0xFFDB2777));
+      case DemoAction.closeStudio:
+        await _closeTourStudio(animate: true);
+    }
+  }
+
+  Future<void> _setTourOccasion(Occasion occasion) async {
+    await _visualClick(
+      const Key('tour-occasion-picker'),
+      'Select ${occasion.label}',
+    );
+    await _feedTransition.reverse().orCancel;
+    if (!mounted) return;
+    setState(() {
+      _occasion = occasion;
+      _occasionStyle = styleFor(occasion);
+      _occasionPalette = paletteFor(occasion);
+      _occasionComposition = compositionFor(occasion);
+    });
+    _render();
+    await _feedTransition.forward().orCancel;
+  }
+
+  Future<void> _setTourUser(_DemoUser user) async {
+    await _visualClick(const Key('tour-user-picker'), 'Select ${user.label}');
+    await _feedTransition.reverse().orCancel;
+    if (!mounted) return;
+    setState(() => _demoUser = user);
+    final localProfile = user == _DemoUser.fred
+        ? const TouchProfile.empty()
+        : demoLocalConfigurations()
+              .firstWhere((configuration) => configuration.userId == user.name)
+              .profile;
+    _touch.useConfigurations(
+      remote: const TouchProfile.empty(),
+      local: localProfile,
+      editRemote: false,
+      label: 'Demo: ${user.label}',
+      saveEditedProfile: (_) async {},
+    );
+    _render();
+    await _feedTransition.forward().orCancel;
+  }
+
+  Element? _findTourElement(Key key) {
+    final root = Navigator.of(context, rootNavigator: true).context as Element;
+    Element? found;
+    void visit(Element element) {
+      if (found != null) return;
+      if (element.widget.key == key) {
+        found = element;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    visit(root);
+    return found;
+  }
+
+  Element? _firstReadButton() {
+    final root = Navigator.of(context, rootNavigator: true).context as Element;
+    Element? button;
+    void visit(Element element) {
+      if (button != null) return;
+      final widget = element.widget;
+      if (widget is Text && widget.data == 'Read original') {
+        element.visitAncestorElements((ancestor) {
+          if (ancestor.widget is ButtonStyleButton) {
+            button = ancestor;
+            return false;
+          }
+          return true;
+        });
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    visit(root);
+    return button;
+  }
+
+  Future<void> _highlightReadButton(String label, Color color) async {
+    final box = _firstReadButton()?.renderObject;
+    if (box is! RenderBox || !box.attached || !mounted) return;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final entry = OverlayEntry(
+      builder: (_) => IgnorePointer(
+        child: _TourClickMarker(
+          target: rect,
+          label: label,
+          color: color,
+          showCursor: false,
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    entry.remove();
+    entry.dispose();
+  }
+
+  Future<Element?> _waitForTourElement(Key key) async {
+    for (var attempt = 0; attempt < 30 && mounted; attempt++) {
+      final element = _findTourElement(key);
+      if (element != null) return element;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    return null;
+  }
+
+  Future<void> _visualClick(Key key, String label) async {
+    final element = await _waitForTourElement(key);
+    final box = element?.renderObject;
+    if (box is! RenderBox || !box.attached || !mounted) return;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final entry = OverlayEntry(
+      builder: (_) => IgnorePointer(
+        child: _TourClickMarker(target: rect, label: label),
+      ),
+    );
+    overlay.insert(entry);
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    entry.remove();
+    entry.dispose();
+  }
+
+  Future<void> _closeTourStudio({bool animate = false}) async {
+    if (!_tourStudioOpen || !mounted) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    // Opening the Studio first loads saved window bounds. A quick manual skip
+    // may reach this cue before its route has been pushed.
+    for (
+      var attempt = 0;
+      attempt < 20 && _tourStudioOpen && !navigator.canPop();
+      attempt++
+    ) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (!_tourStudioOpen || !mounted || !navigator.canPop()) return;
+    if (animate) {
+      const closeKey = Key('genui-studio-close');
+      await _visualClick(closeKey, 'Close Studio');
+      final close = _findTourElement(closeKey)?.widget;
+      if (close is IconButton && close.onPressed != null) {
+        close.onPressed!();
+        _tourStudioOpen = false;
+        return;
+      }
+    }
+    _tourStudioOpen = false;
+    navigator.pop();
+  }
+
+  Future<void> _stopIntroTour() async {
+    await _closeTourStudio();
+    if (_tourPreviousArticles == null || !mounted) return;
+    setState(() {
+      _articles = _tourPreviousArticles!;
+      _articlesSource = _tourPreviousArticlesSource;
+      _error = _tourPreviousError;
+      _occasion = _tourPreviousOccasion!;
+      _demoUser = _tourPreviousUser!;
+      _aiLayout = _tourPreviousAiLayout;
+      _aiError = _tourPreviousAiError;
+      _tourPreviousArticles = null;
+    });
+    await _loadConfigurationContext();
+    if (mounted) _render();
   }
 
   @override
@@ -436,7 +716,10 @@ class _ReaderPageState extends State<ReaderPage>
       if (index == null || index >= _renderedArticles.length) return;
       final url = _renderedArticles[index].link;
       if (url.scheme == 'https' || url.scheme == 'http') {
-        launchUrl(url, mode: LaunchMode.externalApplication);
+        unawaited(
+          widget.openArticle?.call(url) ??
+              launchUrl(url, mode: LaunchMode.externalApplication),
+        );
       }
     });
     return processor;
@@ -648,8 +931,10 @@ class _ReaderPageState extends State<ReaderPage>
       const Text('Remote'),
       const SizedBox(height: 12),
       ConstrainedBox(
+        key: const Key('tour-occasion-picker'),
         constraints: const BoxConstraints(maxWidth: 390),
         child: DropdownButtonFormField<Occasion>(
+          key: ValueKey(_occasion),
           isExpanded: true,
           initialValue: _occasion,
           decoration: const InputDecoration(
@@ -689,50 +974,55 @@ class _ReaderPageState extends State<ReaderPage>
   Widget _buildUserPanel({required bool vertical}) {
     final controls = <Widget>[
       ConstrainedBox(
+        key: const Key('tour-user-picker'),
         constraints: const BoxConstraints(maxWidth: 390),
-        child: DropdownButtonFormField<_DemoUser>(
-          key: const Key('demo-user-picker'),
-          initialValue: _demoUser,
-          isExpanded: true,
-          itemHeight: 76,
-          decoration: const InputDecoration(
-            labelText: 'User',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-          selectedItemBuilder: (context) => [
-            for (final user in _DemoUser.values)
-              Align(alignment: Alignment.centerLeft, child: Text(user.label)),
-          ],
-          items: _DemoUser.values
-              .map(
-                (user) => DropdownMenuItem(
-                  value: user,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.label,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        user.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
+        child: KeyedSubtree(
+          key: ValueKey(_demoUser),
+          child: DropdownButtonFormField<_DemoUser>(
+            key: const Key('demo-user-picker'),
+            initialValue: _demoUser,
+            isExpanded: true,
+            itemHeight: 76,
+            decoration: const InputDecoration(
+              labelText: 'User',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            selectedItemBuilder: (context) => [
+              for (final user in _DemoUser.values)
+                Align(alignment: Alignment.centerLeft, child: Text(user.label)),
+            ],
+            items: _DemoUser.values
+                .map(
+                  (user) => DropdownMenuItem(
+                    value: user,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.label,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          user.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              )
-              .toList(),
-          onChanged: _changeDemoUser,
+                )
+                .toList(),
+            onChanged: _changeDemoUser,
+          ),
         ),
       ),
       Tooltip(
         message: 'Open GenUI Touch',
         child: OutlinedButton.icon(
+          key: const Key('tour-touch-button'),
           onPressed: _touchReady ? _openTouchStudio : null,
           icon: const Icon(Icons.tune),
           label: const Text('Touch'),
@@ -907,8 +1197,7 @@ class _ReaderPageState extends State<ReaderPage>
             ),
           ),
           Tooltip(
-            message:
-                'Uses feed tags and clear title signals. Technology policy stays visible.',
+            message: 'Uses feed tags and clear title signals. Technology policy stays visible.',
             child: FilterChip(
               selected: _hidePolitical,
               label: const Text('Hide politics & war'),
@@ -963,6 +1252,8 @@ class _ReaderPageState extends State<ReaderPage>
     _requestId++;
     _aiRequestId++;
     _aiService?.dispose();
+    _tour.removeListener(_onTourChanged);
+    _tour.dispose();
     _feedTransition.dispose();
     _rss.dispose();
     _touch.dispose();
@@ -1027,6 +1318,11 @@ class _ReaderPageState extends State<ReaderPage>
             ],
           ),
           actions: [
+            TextButton.icon(
+              onPressed: _touchReady && !_tour.active ? _tour.start : null,
+              icon: const Icon(Icons.play_circle_outline),
+              label: const Text('1-min demo'),
+            ),
             IconButton(
               key: const Key('feed-settings-button'),
               onPressed: _showFeedControls,
@@ -1059,9 +1355,17 @@ class _ReaderPageState extends State<ReaderPage>
                   child: SlideTransition(
                     position: _feedOffset,
                     child: _surface != null
-                        ? A2uiSurface(
-                            key: ObjectKey(_surface),
-                            surface: _surface!,
+                        ? AnimatedScale(
+                            scale: _tour.active && _tour.sceneIndex == 0
+                                ? 1.025
+                                : 1,
+                            duration: const Duration(milliseconds: 1800),
+                            curve: Curves.easeInOut,
+                            alignment: Alignment.topCenter,
+                            child: A2uiSurface(
+                              key: ObjectKey(_surface),
+                              surface: _surface!,
+                            ),
                           )
                         : const Padding(
                             padding: EdgeInsets.all(16),
@@ -1070,9 +1374,11 @@ class _ReaderPageState extends State<ReaderPage>
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Articles belong to their respective publishers. Open the original link to read. No scraping or article republishing.',
-                  style: TextStyle(fontSize: 12),
+                Text(
+                  _tour.active
+                      ? 'Curated RSS snapshot · Read original opens each publisher article.'
+                      : 'Articles belong to their respective publishers. Open the original link to read. No scraping or article republishing.',
+                  style: const TextStyle(fontSize: 12),
                 ),
               ],
             );
@@ -1105,9 +1411,168 @@ class _ReaderPageState extends State<ReaderPage>
             );
           },
         ),
+        bottomNavigationBar: _tour.active
+            ? SafeArea(
+                child: Material(
+                  elevation: 12,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 730),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_tour.sceneIndex + 1}/${_tour.scenes.length} · ${_tour.scene!.title} · Curated RSS',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(_tour.scene!.narration),
+                            ],
+                          ),
+                        ),
+                        Wrap(
+                          spacing: 4,
+                          children: [
+                            IconButton(
+                              tooltip: _tour.playing
+                                  ? 'Pause demo'
+                                  : 'Play demo',
+                              onPressed: _tour.playing
+                                  ? _tour.pause
+                                  : _tour.resume,
+                              icon: Icon(
+                                _tour.playing ? Icons.pause : Icons.play_arrow,
+                              ),
+                            ),
+                            if (_tour.ended)
+                              FilledButton.icon(
+                                onPressed: _tour.replay,
+                                icon: const Icon(Icons.replay),
+                                label: const Text('Replay'),
+                              )
+                            else
+                              IconButton(
+                                tooltip: 'Next scene',
+                                onPressed: _tour.next,
+                                icon: const Icon(Icons.skip_next),
+                              ),
+                            IconButton(
+                              tooltip: 'Close demo',
+                              onPressed: _tour.stop,
+                              icon: const Icon(Icons.close),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            : null,
       ),
     );
   }
+}
+
+/// The tour's window sits beside the lead story and never changes saved bounds.
+class _TourStudioBounds implements TouchStudioBoundsPersistence {
+  const _TourStudioBounds(this.viewport);
+
+  final Size viewport;
+
+  @override
+  Future<Rect?> load() async {
+    final width = (viewport.width * 0.38).clamp(360.0, 560.0);
+    final height = (viewport.height - 250).clamp(420.0, 650.0);
+    return Rect.fromLTWH(viewport.width - width - 28, 72, width, height);
+  }
+
+  @override
+  Future<void> save(Rect bounds) async {}
+}
+
+/// A visible pointer and focus ring for scripted UI actions in a recording.
+class _TourClickMarker extends StatelessWidget {
+  const _TourClickMarker({
+    required this.target,
+    required this.label,
+    this.color = const Color(0xFFDB2777),
+    this.showCursor = true,
+  });
+
+  final Rect target;
+  final String label;
+  final Color color;
+  final bool showCursor;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: const Duration(milliseconds: 650),
+    curve: Curves.easeOutCubic,
+    builder: (context, progress, _) {
+      final center = target.center;
+      final labelLeft = (center.dx - 80).clamp(
+        12.0,
+        MediaQuery.sizeOf(context).width - 180,
+      );
+      return Stack(
+        children: [
+          Positioned.fromRect(
+            rect: target.inflate(5 + (1 - progress) * 8),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(color: color, width: 3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          Positioned(
+            left: labelLeft,
+            top: (target.top - 43).clamp(8.0, double.infinity),
+            child: Material(
+              color: const Color(0xFF292333),
+              borderRadius: BorderRadius.circular(20),
+              elevation: 5,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+            ),
+          ),
+          if (showCursor)
+            Positioned(
+              left: center.dx + (1 - progress) * 55 - 16,
+              top: center.dy + (1 - progress) * 45 - 16,
+              child: Transform.scale(
+                scale: progress > 0.75 ? 1.2 : 1,
+                child: Icon(
+                  Icons.ads_click,
+                  size: 32,
+                  color: color,
+                  shadows: const [Shadow(color: Colors.white, blurRadius: 7)],
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
 }
 
 class _AiPromptDialog extends StatefulWidget {

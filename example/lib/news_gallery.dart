@@ -87,6 +87,8 @@ final _section = ComponentImplementation(
       background,
     );
     final radius = _measure(props, 'cornerRadius', 0, 0, 40);
+    final titleSize = _measure(props, 'titleSize', 26, 14, 52);
+    final title = props.string('title') ?? '';
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(_measure(props, 'padding', 0, 0, 48)),
@@ -102,7 +104,9 @@ final _section = ComponentImplementation(
               padding: const EdgeInsets.only(bottom: 5),
               child: Text(
                 eyebrow.toUpperCase(),
+                key: ValueKey((eyebrow, accent)),
                 style: TextStyle(
+                  inherit: false,
                   color: accent,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -111,10 +115,12 @@ final _section = ComponentImplementation(
               ),
             ),
           Text(
-            props.string('title') ?? '',
+            title,
+            key: ValueKey((title, ink, titleSize)),
             style: TextStyle(
+              inherit: false,
               color: ink,
-              fontSize: _measure(props, 'titleSize', 26, 14, 52),
+              fontSize: titleSize,
               fontWeight: FontWeight.w700,
               height: 1.15,
             ),
@@ -187,10 +193,9 @@ final _story = ComponentImplementation(
       _readColor(props.string('accentColor'), theme.colorScheme.primary),
       background,
     );
-    final buttonColor = readableColor(
-      _readColor(props.string('buttonColor'), accent),
-      background,
-    );
+    // A chosen button color is an appearance value, not foreground text.
+    // Replacing it for contrast made Emily's pink selection render as black.
+    final buttonColor = _readColor(props.string('buttonColor'), accent);
     final border = _readColor(
       props.string('borderColor'),
       ink.withValues(alpha: .12),
@@ -227,21 +232,35 @@ final _story = ComponentImplementation(
       _ => FontWeight.w700,
     };
     final action = props.action('open');
-    final buttonLabel = props.string('openLabel') ?? 'Read original ↗';
+    final buttonLabel = props.string('openLabel') ?? 'Read original';
     final onPressed = action == null ? null : () => unawaited(action.call());
+    final buttonContent = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            buttonLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 6),
+        const Icon(Icons.open_in_new, size: 16),
+      ],
+    );
     final button = switch (props.string('buttonStyle')) {
       'filled' => FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: buttonColor,
-          foregroundColor: readableColor(background, buttonColor),
+          foregroundColor: readableColor(Colors.white, buttonColor),
         ),
-        child: Text(buttonLabel),
+        child: buttonContent,
       ),
       'text' => TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(foregroundColor: buttonColor),
-        child: Text(buttonLabel),
+        child: buttonContent,
       ),
       _ => OutlinedButton(
         onPressed: onPressed,
@@ -249,7 +268,7 @@ final _story = ComponentImplementation(
           foregroundColor: buttonColor,
           side: BorderSide(color: buttonColor.withValues(alpha: .5)),
         ),
-        child: Text(buttonLabel),
+        child: buttonContent,
       ),
     };
     final content = Column(

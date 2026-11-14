@@ -47,6 +47,10 @@ The Touch demo panel opens by default. On first use, the reader creates three lo
 
 The AppBar title is **Live RSS stories · rendered by A2UI**. Its Settings action opens the RSS source, filter, and custom feed controls. The edition heading is supplied by the A2UI news surface.
 
+## One-minute guided demo
+
+Use **1-min demo** in the AppBar to play the English intro script. The five scenes show an Everyday page, switch to Christmas and then Winter Games, compare Joe and Emily, then let Emily change the **Read original** button to pink in Touch Studio before the closing frame. The local RSS snapshot contains five real articles from the Flutter Blog, Google Developers Blog, and Olympics.com with publisher image URLs. **Read original** opens the linked publisher page during the tour. A2UI renders the page; animated transitions, focus rings, and click markers show the selection and editing steps. The Studio opens in a compact window beside the news cards for this tour; its saved size is not changed. The bottom bar shows the voice-over text and offers pause, next, close, and end-of-script replay controls. Closing the demo restores the previous feed, occasion, and user profile without saving the scripted edit. The scene data and reusable controller live in `lib/demo_tour.dart`; the curated RSS snapshot lives in `lib/demo_feed.dart`. Thumbnail images are fetched from publishers at runtime, so a blocked image host may show the built-in fallback.
+
 Changing the source, filter, occasion, or AI layout recreates the A2UI news surface and reapplies the active remote and local type defaults. Old reader profiles retain their type defaults, but their item-role rules are ignored. Numeric values are clamped by the renderer. Color fields display the current color as a swatch and offer 16 named colors; previously saved colors outside the palette remain visible until changed.
 
 Switching occasions fades the old feed out, then brings the new A2UI surface in with a short upward motion. The header and shell colors transition alongside it. Rapid selections cancel the earlier transition cleanly.
