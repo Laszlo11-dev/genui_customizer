@@ -5,7 +5,7 @@
 ## Mai átadás: demó felület
 
 - A `Touch demo` panel az oldal tetején nyitva indul. Benne van a **User** és az **Occasion** választó, a **Touch**, a **Debug**, valamint Tenant editor esetén a **Save occasion** gomb. A User menü mind a négy személy nevét és angol leírását mutatja; a kiválasztott személy leírása a mezők alatt is látszik.
-- A feedhez tartozó RSS preset, politikai szűrő, keresés, egyéni RSS/Atom URL és Load gomb a nagy cím alatti, alapból zárt lenyíló részben van. A lenyíló fejléc maga a **Live RSS stories · rendered by A2UI** sor; nincs külön kártya vagy „Feed controls” cím.
+- A **Live RSS stories · rendered by A2UI** felirat az AppBar címe. A külön Settings művelettel párbeszédablakban érhető el az RSS preset, a politikai szűrő, az egyéni RSS/Atom URL és a Load gomb. A keresés, a külön Flutter főcím és a feed fölötti vezérlősor megszűnt.
 - A Touch demo panel belső felső térköze 16 px, hogy a **User** és az **Occasion** mezők lebegő felirata ne vágódjon le. Ez a legutóbbi, még commitolatlan kódmódosítás.
 - A mai commitok: `15d49b6` (Touch színválasztó és típus alapértékek), `731ed02` (User választó és Studio finomítások), `48b1d1f` (occasion konfiguráció és felhasználófüggő mentés). A jelenlegi munkafában a panel térközének javítása és ez a handover-frissítés maradt.
 

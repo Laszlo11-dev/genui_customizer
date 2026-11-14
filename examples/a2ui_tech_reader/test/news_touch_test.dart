@@ -51,7 +51,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Christmas').last);
     await tester.pumpAndSettle();
-    expect(find.text('The holiday edit'), findsOneWidget);
+    expect(
+      tester
+          .widget<DropdownButtonFormField<Occasion>>(
+            find.byType(DropdownButtonFormField<Occasion>),
+          )
+          .initialValue,
+      Occasion.christmas,
+    );
     expect(find.byType(A2uiSurface), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -65,6 +72,53 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const TechReaderApp());
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('feed-settings-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('RSS preset'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Touch demo sits in an elevated right sidebar on wide screens', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(1800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+
+    final panel = find.byKey(const Key('touch-demo-panel'));
+    final user = find.byKey(const Key('demo-user-picker'));
+    final occasion = find.byType(DropdownButtonFormField<Occasion>);
+    expect(tester.getTopLeft(panel).dx, greaterThan(1200));
+    expect(
+      tester.getTopLeft(occasion).dy,
+      greaterThan(tester.getTopLeft(user).dy),
+    );
+    final card = tester.widget<Card>(
+      find.ancestor(of: panel, matching: find.byType(Card)).first,
+    );
+    expect(card.elevation, 16);
+    expect(card.shadowColor, Colors.black.withValues(alpha: 0.55));
+    expect(
+      (card.shape as RoundedRectangleBorder).borderRadius,
+      BorderRadius.zero,
+    );
+    final panelScroll = tester.widget<SingleChildScrollView>(
+      find
+          .ancestor(of: panel, matching: find.byType(SingleChildScrollView))
+          .first,
+    );
+    expect(panelScroll.padding, const EdgeInsets.fromLTRB(20, 24, 20, 32));
+    expect(find.text('The future, in focus.'), findsNothing);
+    expect(find.text('Live RSS stories · rendered by A2UI'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('feed-settings-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('RSS preset'), findsOneWidget);
+    expect(find.text('Search stories'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -85,7 +139,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Christmas').last);
     await tester.pumpAndSettle();
-    expect(find.text('The holiday edit'), findsOneWidget);
+    expect(
+      tester
+          .widget<DropdownButtonFormField<Occasion>>(
+            find.byType(DropdownButtonFormField<Occasion>),
+          )
+          .initialValue,
+      Occasion.christmas,
+    );
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -661,6 +722,64 @@ void main() {
     expect(grids.every((component) => component.toJson()['gap'] == 24), isTrue);
     await touch.save();
     expect(storage.profile?.defaults.length, 3);
+  });
+
+  testWidgets('Read original buttons use the Touch button color', (
+    tester,
+  ) async {
+    final touch = GenUiTouchController(contracts: readerTouchContracts());
+    final processor = MessageProcessor<ComponentImplementation>(
+      catalogs: [basicCatalog(), newsGalleryCatalog],
+    );
+    touch.attachProcessor(processor);
+    addTearDown(() {
+      touch.dispose();
+      processor.dispose();
+    });
+    final story = readerTouchContracts().firstWhere(
+      (contract) => contract.componentType == 'NewsStory',
+    );
+    expect(story.properties['buttonColor']?.kind, TouchValueKind.color);
+    touch.setGalleryDefault(story, 'buttonColor', '#C026D3');
+    touch.processAgentMessages(
+      NewsA2uiBuilder.build([
+        for (var i = 0; i < 2; i++)
+          NewsItem(
+            title: 'Article $i',
+            link: Uri.parse('https://example.org/$i'),
+            source: 'Example',
+          ),
+      ], Occasion.everyday),
+    );
+    final surface = processor.model.getSurface(NewsA2uiBuilder.surfaceId)!;
+    expect(
+      surface.componentsModel.get('story_0')?.toJson()['buttonColor'],
+      '#C026D3',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(child: A2uiSurface(surface: surface)),
+        ),
+      ),
+    );
+    expect(
+      tester
+          .widget<FilledButton>(find.byType(FilledButton).first)
+          .style
+          ?.backgroundColor
+          ?.resolve({}),
+      const Color(0xFFC026D3),
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.byType(OutlinedButton).first)
+          .style
+          ?.foregroundColor
+          ?.resolve({}),
+      const Color(0xFFC026D3),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   test('original appearance can be restored by property or type', () {

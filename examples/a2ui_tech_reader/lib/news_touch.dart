@@ -222,6 +222,11 @@ List<TouchContract> readerTouchContracts() => [
         kind: TouchValueKind.color,
       ),
       TouchProperty(
+        name: 'buttonColor',
+        label: 'Read original button color',
+        kind: TouchValueKind.color,
+      ),
+      TouchProperty(
         name: 'borderColor',
         label: 'Border color',
         kind: TouchValueKind.color,

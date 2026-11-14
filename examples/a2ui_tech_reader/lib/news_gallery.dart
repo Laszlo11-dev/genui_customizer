@@ -152,6 +152,7 @@ final _story = ComponentImplementation(
       'textColor': _color,
       'mutedColor': _color,
       'accentColor': _color,
+      'buttonColor': _color,
       'borderColor': _color,
       'cornerRadius': _number,
       'padding': _number,
@@ -184,6 +185,10 @@ final _story = ComponentImplementation(
     );
     final accent = readableColor(
       _readColor(props.string('accentColor'), theme.colorScheme.primary),
+      background,
+    );
+    final buttonColor = readableColor(
+      _readColor(props.string('buttonColor'), accent),
       background,
     );
     final border = _readColor(
@@ -228,21 +233,21 @@ final _story = ComponentImplementation(
       'filled' => FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: accent,
-          foregroundColor: readableColor(background, accent),
+          backgroundColor: buttonColor,
+          foregroundColor: readableColor(background, buttonColor),
         ),
         child: Text(buttonLabel),
       ),
       'text' => TextButton(
         onPressed: onPressed,
-        style: TextButton.styleFrom(foregroundColor: accent),
+        style: TextButton.styleFrom(foregroundColor: buttonColor),
         child: Text(buttonLabel),
       ),
       _ => OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: accent,
-          side: BorderSide(color: accent.withValues(alpha: .5)),
+          foregroundColor: buttonColor,
+          side: BorderSide(color: buttonColor.withValues(alpha: .5)),
         ),
         child: Text(buttonLabel),
       ),

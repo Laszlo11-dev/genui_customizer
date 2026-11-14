@@ -87,7 +87,6 @@ class _ReaderPageState extends State<ReaderPage>
   String _aiPrompt = 'Holidays at Sea';
   int _aiRequestId = 0;
   final _sourceController = TextEditingController(text: feedPresets.first.url);
-  final _searchController = TextEditingController();
   late MessageProcessor<ComponentImplementation> _processor;
   late final GenUiTouchController _touch;
   final TouchConfigurationStore _remoteStore =
@@ -603,14 +602,9 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   List<NewsItem> _filteredArticles() {
-    final query = _searchController.text.trim().toLowerCase();
     return _articles
         .where((article) {
-          if (_hidePolitical && isPoliticalNews(article)) return false;
-          return query.isEmpty ||
-              '${article.title} ${article.summary} ${article.source}'
-                  .toLowerCase()
-                  .contains(query);
+          return !_hidePolitical || !isPoliticalNews(article);
         })
         .take(24)
         .toList();
@@ -647,153 +641,196 @@ class _ReaderPageState extends State<ReaderPage>
     );
   }
 
-  Widget _buildTouchDemoPanel() => Card(
-    child: ExpansionTile(
-      key: const Key('touch-demo-panel'),
-      initiallyExpanded: true,
-      title: const Text('Touch demo'),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: math.min(
+  Widget _buildTouchDemoPanel({required bool vertical}) {
+    final controls = <Widget>[
+      SizedBox(
+        width: vertical
+            ? double.infinity
+            : math.min(
                 390.0,
                 math.max(0.0, MediaQuery.sizeOf(context).width - 90.0),
               ),
-              child: DropdownButtonFormField<_DemoUser>(
-                key: const Key('demo-user-picker'),
-                initialValue: _demoUser,
-                isExpanded: true,
-                itemHeight: 76,
-                decoration: const InputDecoration(
-                  labelText: 'User',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+        child: DropdownButtonFormField<_DemoUser>(
+          key: const Key('demo-user-picker'),
+          initialValue: _demoUser,
+          isExpanded: true,
+          itemHeight: 76,
+          decoration: const InputDecoration(
+            labelText: 'User',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          selectedItemBuilder: (context) => [
+            for (final user in _DemoUser.values)
+              Align(alignment: Alignment.centerLeft, child: Text(user.label)),
+          ],
+          items: _DemoUser.values
+              .map(
+                (user) => DropdownMenuItem(
+                  value: user,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.label,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        user.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
-                selectedItemBuilder: (context) => [
-                  for (final user in _DemoUser.values)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(user.label),
-                    ),
-                ],
-                items: _DemoUser.values
-                    .map(
-                      (user) => DropdownMenuItem(
-                        value: user,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.label,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              user.description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+              )
+              .toList(),
+          onChanged: _changeDemoUser,
+        ),
+      ),
+      SizedBox(
+        width: vertical
+            ? double.infinity
+            : math.min(
+                260.0,
+                math.max(0.0, MediaQuery.sizeOf(context).width - 90.0),
+              ),
+        child: DropdownButtonFormField<Occasion>(
+          isExpanded: true,
+          initialValue: _occasion,
+          decoration: const InputDecoration(
+            labelText: 'Occasion / A2UI layout',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: Occasion.values.map((o) {
+            final locked =
+                o == Occasion.askAi && _aiService == null && !_hasSavedAiLayout;
+            final disabledColor = Theme.of(context).disabledColor;
+            return DropdownMenuItem(
+              value: o,
+              enabled: !locked,
+              child: locked
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 16,
+                          color: disabledColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(o.label, style: TextStyle(color: disabledColor)),
+                      ],
+                    )
+                  : Text(o.label),
+            );
+          }).toList(),
+          onChanged: _changeOccasion,
+        ),
+      ),
+      Tooltip(
+        message: 'Open GenUI Touch',
+        child: OutlinedButton.icon(
+          onPressed: _touchReady ? _openTouchStudio : null,
+          icon: const Icon(Icons.tune),
+          label: const Text('Touch'),
+        ),
+      ),
+      if (_demoUser == _DemoUser.tenantEditor)
+        OutlinedButton.icon(
+          onPressed: _touchReady ? _saveOccasion : null,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('Save occasion'),
+        ),
+      OutlinedButton.icon(
+        onPressed: _showJson,
+        icon: const Icon(Icons.data_object),
+        label: const Text('Debug'),
+      ),
+    ];
+    return Card(
+      elevation: 16,
+      shadowColor: Colors.black.withValues(alpha: 0.55),
+      shape: const RoundedRectangleBorder(),
+      child: ExpansionTile(
+        key: const Key('touch-demo-panel'),
+        initiallyExpanded: true,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        title: const Text('Touch demo'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        children: [
+          if (vertical)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 12,
+              children: controls,
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: controls,
+            ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(_demoUser.description),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFeedControls() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640, maxHeight: 560),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: StatefulBuilder(
+              builder: (context, updateDialog) => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Live RSS stories · rendered by A2UI',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    )
-                    .toList(),
-                onChanged: _changeDemoUser,
+                      IconButton(
+                        tooltip: 'Close RSS controls',
+                        onPressed: () => Navigator.pop(dialogContext),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFeedControlsPanel(updateDialog),
+                ],
               ),
             ),
-            SizedBox(
-              width: 260,
-              child: DropdownButtonFormField<Occasion>(
-                isExpanded: true,
-                initialValue: _occasion,
-                decoration: const InputDecoration(
-                  labelText: 'Occasion / A2UI layout',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                items: Occasion.values.map((o) {
-                  final locked =
-                      o == Occasion.askAi &&
-                      _aiService == null &&
-                      !_hasSavedAiLayout;
-                  final disabledColor = Theme.of(context).disabledColor;
-                  return DropdownMenuItem(
-                    value: o,
-                    enabled: !locked,
-                    child: locked
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.lock_outline,
-                                size: 16,
-                                color: disabledColor,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                o.label,
-                                style: TextStyle(color: disabledColor),
-                              ),
-                            ],
-                          )
-                        : Text(o.label),
-                  );
-                }).toList(),
-                onChanged: _changeOccasion,
-              ),
-            ),
-            Tooltip(
-              message: 'Open GenUI Touch',
-              child: OutlinedButton.icon(
-                onPressed: _touchReady ? _openTouchStudio : null,
-                icon: const Icon(Icons.tune),
-                label: const Text('Touch'),
-              ),
-            ),
-            if (_demoUser == _DemoUser.tenantEditor)
-              OutlinedButton.icon(
-                onPressed: _touchReady ? _saveOccasion : null,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Save occasion'),
-              ),
-            OutlinedButton.icon(
-              onPressed: _showJson,
-              icon: const Icon(Icons.data_object),
-              label: const Text('Debug'),
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(_demoUser.description),
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
-  Widget _buildFeedControlsPanel(Color ink) => ExpansionTile(
-    key: const Key('feed-controls-panel'),
-    initiallyExpanded: false,
-    minTileHeight: 40,
-    tilePadding: EdgeInsets.zero,
-    childrenPadding: const EdgeInsets.only(top: 8, bottom: 12),
-    shape: const Border(),
-    collapsedShape: const Border(),
-    iconColor: ink.withValues(alpha: 0.7),
-    collapsedIconColor: ink.withValues(alpha: 0.7),
-    title: Text(
-      'Live RSS stories · rendered by A2UI',
-      style: TextStyle(color: ink.withValues(alpha: 0.7)),
-    ),
+  Widget _buildFeedControlsPanel(StateSetter updateDialog) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Wrap(
         spacing: 12,
@@ -818,7 +855,10 @@ class _ReaderPageState extends State<ReaderPage>
                     (p) => DropdownMenuItem(value: p.name, child: Text(p.name)),
                   )
                   .toList(),
-              onChanged: _choosePreset,
+              onChanged: (name) {
+                _choosePreset(name);
+                updateDialog(() {});
+              },
             ),
           ),
           Tooltip(
@@ -829,24 +869,12 @@ class _ReaderPageState extends State<ReaderPage>
               label: const Text('Hide politics & war'),
               onSelected: (value) {
                 setState(() => _hidePolitical = value);
+                updateDialog(() {});
                 _render();
               },
             ),
           ),
         ],
-      ),
-      const SizedBox(height: 12),
-      TextField(
-        controller: _searchController,
-        onChanged: (_) {
-          _render();
-        },
-        decoration: const InputDecoration(
-          labelText: 'Search stories',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
       ),
       const SizedBox(height: 12),
       Row(
@@ -895,7 +923,6 @@ class _ReaderPageState extends State<ReaderPage>
     _touch.dispose();
     _processor.dispose();
     _sourceController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -910,7 +937,6 @@ class _ReaderPageState extends State<ReaderPage>
       pageBackground == style.background ? style.ink : const Color(0xFF192336),
       pageBackground,
     );
-    final readableAccent = readableColor(style.accent, pageBackground);
     final theme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
@@ -943,23 +969,25 @@ class _ReaderPageState extends State<ReaderPage>
         appBar: AppBar(
           title: Row(
             children: [
-              Icon(Icons.auto_stories_outlined, color: readableAccent),
+              Icon(Icons.auto_stories_outlined, color: pageInk),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  'A2UI / TECH READER',
+                  'Live RSS stories · rendered by A2UI',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.3,
-                    fontSize: 17,
-                  ),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
           actions: [
+            IconButton(
+              key: const Key('feed-settings-button'),
+              onPressed: _showFeedControls,
+              tooltip: 'RSS settings',
+              icon: const Icon(Icons.settings_outlined),
+            ),
             IconButton(
               onPressed: _loading ? null : _refresh,
               tooltip: 'Refresh RSS',
@@ -968,61 +996,17 @@ class _ReaderPageState extends State<ReaderPage>
             const SizedBox(width: 8),
           ],
         ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1120),
-            child: ListView(
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 1440;
+            final feed = ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [
-                const SizedBox(height: 12),
-                _buildTouchDemoPanel(),
-                const SizedBox(height: 12),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 380),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  layoutBuilder: (current, previous) => Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [...previous, ?current],
-                  ),
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.08),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
-                    ),
-                  ),
-                  child: Column(
-                    key: ValueKey(_active),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        style.kicker,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: readableAccent,
-                          letterSpacing: 2,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        style.headline,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 46,
-                          letterSpacing: -1.8,
-                          color: pageInk,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                _buildFeedControlsPanel(pageInk),
-                const SizedBox(height: 16),
+                SizedBox(height: wide ? 4 : 12),
+                if (!wide) ...[
+                  _buildTouchDemoPanel(vertical: false),
+                  const SizedBox(height: 12),
+                ],
                 // The article cards, headings, actions, and occasion-specific
                 // content below are produced by the official A2UI renderer.
                 FadeTransition(
@@ -1046,8 +1030,35 @@ class _ReaderPageState extends State<ReaderPage>
                   style: TextStyle(fontSize: 12),
                 ),
               ],
-            ),
-          ),
+            );
+            if (!wide) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1120),
+                  child: feed,
+                ),
+              );
+            }
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1500),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: feed),
+                    const SizedBox(width: 24),
+                    SizedBox(
+                      width: 360,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                        child: _buildTouchDemoPanel(vertical: true),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
