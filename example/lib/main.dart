@@ -934,8 +934,6 @@ class _ReaderPageState extends State<ReaderPage>
     key: const Key('occasion-panel'),
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text('Remote'),
-      const SizedBox(height: 12),
       ConstrainedBox(
         key: const Key('tour-occasion-picker'),
         constraints: const BoxConstraints(maxWidth: 390),
@@ -944,9 +942,10 @@ class _ReaderPageState extends State<ReaderPage>
           isExpanded: true,
           initialValue: _occasion,
           decoration: const InputDecoration(
-            labelText: 'Occasion / A2UI layout',
+            labelText: 'Remote',
             border: OutlineInputBorder(),
             isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
           items: Occasion.values.map((o) {
             final locked =
@@ -977,72 +976,38 @@ class _ReaderPageState extends State<ReaderPage>
     ],
   );
 
-  Widget _buildUserPanel({required bool vertical}) {
-    final controls = <Widget>[
-      ConstrainedBox(
-        key: const Key('tour-user-picker'),
-        constraints: const BoxConstraints(maxWidth: 390),
-        child: KeyedSubtree(
-          key: ValueKey(_demoUser),
-          child: DropdownButtonFormField<_DemoUser>(
-            key: const Key('demo-user-picker'),
-            initialValue: _demoUser,
-            isExpanded: true,
-            itemHeight: 76,
-            decoration: const InputDecoration(
-              labelText: 'User',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            selectedItemBuilder: (context) => [
-              for (final user in _DemoUser.values)
-                Align(alignment: Alignment.centerLeft, child: Text(user.label)),
-            ],
-            items: _DemoUser.values
-                .map(
-                  (user) => DropdownMenuItem(
-                    value: user,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.label,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        Text(
-                          user.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: _changeDemoUser,
-          ),
-        ),
-      ),
+  Widget _buildUserPanel() {
+    final actionStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 32),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    );
+    final actions = <Widget>[
       Tooltip(
         message: 'Open GenUI Touch',
         child: OutlinedButton.icon(
           key: const Key('tour-touch-button'),
           onPressed: _touchReady ? _openTouchStudio : null,
-          icon: const Icon(Icons.tune),
+          style: actionStyle,
+          icon: const Icon(Icons.tune, size: 18),
           label: const Text('Touch'),
         ),
       ),
       if (_demoUser == _DemoUser.tenantEditor)
-        OutlinedButton.icon(
-          onPressed: _touchReady ? _saveOccasion : null,
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('Save occasion'),
+        Tooltip(
+          message: 'Save occasion',
+          child: OutlinedButton.icon(
+            onPressed: _touchReady ? _saveOccasion : null,
+            style: actionStyle,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: const Text('Save'),
+          ),
         ),
       OutlinedButton.icon(
         onPressed: _showJson,
-        icon: const Icon(Icons.data_object),
+        style: actionStyle,
+        icon: const Icon(Icons.data_object, size: 18),
         label: const Text('Debug'),
       ),
     ];
@@ -1050,31 +1015,74 @@ class _ReaderPageState extends State<ReaderPage>
       key: const Key('user-panel'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Local'),
-        const SizedBox(height: 12),
-        if (vertical)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 12,
-            children: controls,
-          )
-        else
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: controls,
+        ConstrainedBox(
+          key: const Key('tour-user-picker'),
+          constraints: const BoxConstraints(maxWidth: 390),
+          child: KeyedSubtree(
+            key: ValueKey(_demoUser),
+            child: DropdownButtonFormField<_DemoUser>(
+              key: const Key('demo-user-picker'),
+              initialValue: _demoUser,
+              isExpanded: true,
+              itemHeight: 76,
+              decoration: const InputDecoration(
+                labelText: 'Local',
+                border: OutlineInputBorder(),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              selectedItemBuilder: (context) => [
+                for (final user in _DemoUser.values)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(user.label),
+                  ),
+              ],
+              items: _DemoUser.values
+                  .map(
+                    (user) => DropdownMenuItem(
+                      value: user,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.label,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            user.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _changeDemoUser,
+            ),
           ),
-        const SizedBox(height: 12),
+        ),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 6, children: actions),
+        const SizedBox(height: 6),
         Align(
           alignment: Alignment.centerLeft,
-          child: Text(_demoUser.description),
+          child: Text(
+            _demoUser.description,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildDemoPanels({required bool vertical}) => Card(
+  Widget _buildDemoPanels() => Card(
     elevation: 16,
     shadowColor: Colors.black.withValues(alpha: 0.55),
     color: Theme.of(context).colorScheme.inverseSurface,
@@ -1089,8 +1097,8 @@ class _ReaderPageState extends State<ReaderPage>
       tilePadding: EdgeInsets.zero,
       showTrailingIcon: false,
       title: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         color: Theme.of(context).colorScheme.inverseSurface,
         child: Row(
           children: [
@@ -1113,13 +1121,13 @@ class _ReaderPageState extends State<ReaderPage>
         Container(
           width: double.infinity,
           color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildOccasionPanel(),
-              const SizedBox(height: 24),
-              _buildUserPanel(vertical: vertical),
+              const SizedBox(height: 12),
+              _buildUserPanel(),
             ],
           ),
         ),
@@ -1359,10 +1367,7 @@ class _ReaderPageState extends State<ReaderPage>
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [
                 SizedBox(height: wide ? 4 : 12),
-                if (!wide) ...[
-                  _buildDemoPanels(vertical: false),
-                  const SizedBox(height: 12),
-                ],
+                if (!wide) ...[_buildDemoPanels(), const SizedBox(height: 12)],
                 // The article cards, headings, actions, and occasion-specific
                 // content below are produced by the official A2UI renderer.
                 FadeTransition(
@@ -1417,7 +1422,7 @@ class _ReaderPageState extends State<ReaderPage>
                       width: 360,
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-                        child: _buildDemoPanels(vertical: true),
+                        child: _buildDemoPanels(),
                       ),
                     ),
                   ],

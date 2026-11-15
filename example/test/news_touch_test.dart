@@ -79,6 +79,11 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const TechReaderApp());
     await tester.pumpAndSettle();
+    expect(
+      tester.getSize(find.byKey(const Key('touch-demo-panel'))).height,
+      lessThan(320),
+    );
+    expect(find.text('Occasion / A2UI layout'), findsNothing);
     await tester.tap(find.byKey(const Key('feed-settings-button')));
     await tester.pumpAndSettle();
     expect(find.text('RSS preset'), findsOneWidget);
@@ -122,6 +127,7 @@ void main() {
     );
     expect(find.text('Remote'), findsOneWidget);
     expect(find.text('Local'), findsOneWidget);
+    expect(tester.getSize(panel).height, lessThan(280));
     final header = tester.widget<Container>(
       find
           .ancestor(
@@ -326,7 +332,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const TechReaderApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save occasion'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     final saved = await const SharedPreferencesTouchRemoteStore().load(
       'everyday',
