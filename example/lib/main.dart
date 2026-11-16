@@ -930,6 +930,26 @@ class _ReaderPageState extends State<ReaderPage>
     );
   }
 
+  void _showAbout() {
+    showAboutDialog(
+      context: context,
+      applicationName: 'GenUI Touch',
+      children: [
+        const Text('Make generated UI your own.'),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () =>
+                launchUrl(Uri.https('pub.dev', '/packages/genui_customizer')),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('pub.dev package'),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildOccasionPanel() => Column(
     key: const Key('occasion-panel'),
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,7 +965,7 @@ class _ReaderPageState extends State<ReaderPage>
             labelText: 'Remote',
             border: OutlineInputBorder(),
             isDense: true,
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
           items: Occasion.values.map((o) {
             final locked =
@@ -976,7 +996,7 @@ class _ReaderPageState extends State<ReaderPage>
     ],
   );
 
-  Widget _buildUserPanel() {
+  Widget _buildUserPanel({required bool showActions}) {
     final actionStyle = OutlinedButton.styleFrom(
       minimumSize: const Size(0, 32),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1005,10 +1025,18 @@ class _ReaderPageState extends State<ReaderPage>
           ),
         ),
       OutlinedButton.icon(
+        key: const Key('tour-debug-button'),
         onPressed: _showJson,
         style: actionStyle,
         icon: const Icon(Icons.data_object, size: 18),
         label: const Text('Debug'),
+      ),
+      OutlinedButton.icon(
+        key: const Key('tour-about-button'),
+        onPressed: _showAbout,
+        style: actionStyle,
+        icon: const Icon(Icons.info_outline, size: 18),
+        label: const Text('About'),
       ),
     ];
     return Column(
@@ -1031,7 +1059,7 @@ class _ReaderPageState extends State<ReaderPage>
                 isDense: true,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 8,
+                  vertical: 10,
                 ),
               ),
               selectedItemBuilder: (context) => [
@@ -1068,9 +1096,11 @@ class _ReaderPageState extends State<ReaderPage>
             ),
           ),
         ),
+        if (showActions) ...[
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 6, children: actions),
+        ],
         const SizedBox(height: 8),
-        Wrap(spacing: 8, runSpacing: 6, children: actions),
-        const SizedBox(height: 6),
         Align(
           alignment: Alignment.centerLeft,
           child: Text(
@@ -1082,7 +1112,7 @@ class _ReaderPageState extends State<ReaderPage>
     );
   }
 
-  Widget _buildDemoPanels() => Card(
+  Widget _buildDemoPanels({required bool actionsInHeader}) => Card(
     elevation: 16,
     shadowColor: Colors.black.withValues(alpha: 0.55),
     color: Theme.of(context).colorScheme.inverseSurface,
@@ -1097,8 +1127,8 @@ class _ReaderPageState extends State<ReaderPage>
       tilePadding: EdgeInsets.zero,
       showTrailingIcon: false,
       title: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         color: Theme.of(context).colorScheme.inverseSurface,
         child: Row(
           children: [
@@ -1110,6 +1140,56 @@ class _ReaderPageState extends State<ReaderPage>
                 ),
               ),
             ),
+            if (actionsInHeader) ...[
+              IconButton(
+                key: const Key('tour-touch-button'),
+                onPressed: _touchReady ? _openTouchStudio : null,
+                tooltip: 'Open GenUI Touch',
+                color: Theme.of(context).colorScheme.onInverseSurface,
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 40,
+                ),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.tune, size: 20),
+              ),
+              IconButton(
+                key: const Key('tour-debug-button'),
+                onPressed: _showJson,
+                tooltip: 'Debug',
+                color: Theme.of(context).colorScheme.onInverseSurface,
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 40,
+                ),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.data_object, size: 20),
+              ),
+              IconButton(
+                key: const Key('tour-about-button'),
+                onPressed: _showAbout,
+                tooltip: 'About',
+                color: Theme.of(context).colorScheme.onInverseSurface,
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 40,
+                ),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.info_outline, size: 20),
+              ),
+              if (_demoUser == _DemoUser.tenantEditor)
+                IconButton(
+                  onPressed: _touchReady ? _saveOccasion : null,
+                  tooltip: 'Save occasion',
+                  color: Theme.of(context).colorScheme.onInverseSurface,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 36,
+                    height: 40,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.save_outlined, size: 20),
+                ),
+            ],
             Icon(
               _demoExpanded ? Icons.expand_less : Icons.expand_more,
               color: Theme.of(context).colorScheme.onInverseSurface,
@@ -1121,13 +1201,13 @@ class _ReaderPageState extends State<ReaderPage>
         Container(
           width: double.infinity,
           color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildOccasionPanel(),
-              const SizedBox(height: 12),
-              _buildUserPanel(),
+              const SizedBox(height: 14),
+              _buildUserPanel(showActions: !actionsInHeader),
             ],
           ),
         ),
@@ -1367,7 +1447,10 @@ class _ReaderPageState extends State<ReaderPage>
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [
                 SizedBox(height: wide ? 4 : 12),
-                if (!wide) ...[_buildDemoPanels(), const SizedBox(height: 12)],
+                if (!wide) ...[
+                  _buildDemoPanels(actionsInHeader: true),
+                  const SizedBox(height: 12),
+                ],
                 // The article cards, headings, actions, and occasion-specific
                 // content below are produced by the official A2UI renderer.
                 FadeTransition(
@@ -1422,7 +1505,7 @@ class _ReaderPageState extends State<ReaderPage>
                       width: 360,
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-                        child: _buildDemoPanels(),
+                        child: _buildDemoPanels(actionsInHeader: false),
                       ),
                     ),
                   ],

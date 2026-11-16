@@ -54,6 +54,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const TechReaderApp());
     await tester.pumpAndSettle();
+    final panel = find.byKey(const Key('touch-demo-panel'));
+    final touch = find.byKey(const Key('tour-touch-button'));
+    expect(find.descendant(of: panel, matching: touch), findsOneWidget);
+    expect(
+      find.descendant(of: find.byKey(const Key('user-panel')), matching: touch),
+      findsNothing,
+    );
     await tester.tap(find.byType(DropdownButtonFormField<Occasion>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Christmas').last);
@@ -81,9 +88,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.getSize(find.byKey(const Key('touch-demo-panel'))).height,
-      lessThan(320),
+      lessThan(260),
     );
+    final panel = find.byKey(const Key('touch-demo-panel'));
+    for (final key in [
+      'tour-touch-button',
+      'tour-debug-button',
+      'tour-about-button',
+    ]) {
+      final button = find.byKey(Key(key));
+      expect(find.descendant(of: panel, matching: button), findsOneWidget);
+      expect(
+        find.ancestor(of: button, matching: find.byType(AppBar)),
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(button).dy,
+        lessThan(tester.getTopLeft(find.byKey(const Key('occasion-panel'))).dy),
+      );
+    }
     expect(find.text('Occasion / A2UI layout'), findsNothing);
+    await tester.tap(find.byKey(const Key('tour-debug-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Current A2UI JSON'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Current A2UI JSON'))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('occasion-panel')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tour-about-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('GenUI Touch'), findsOneWidget);
+    expect(find.text('Make generated UI your own.'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Make generated UI your own.')))
+        .pop();
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('feed-settings-button')));
     await tester.pumpAndSettle();
     expect(find.text('RSS preset'), findsOneWidget);
@@ -127,7 +164,21 @@ void main() {
     );
     expect(find.text('Remote'), findsOneWidget);
     expect(find.text('Local'), findsOneWidget);
-    expect(tester.getSize(panel).height, lessThan(280));
+    expect(tester.getSize(panel).height, lessThan(320));
+    expect(
+      find.descendant(
+        of: userPanel,
+        matching: find.byKey(const Key('tour-touch-button')),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: userPanel,
+        matching: find.byKey(const Key('tour-about-button')),
+      ),
+      findsOneWidget,
+    );
     final header = tester.widget<Container>(
       find
           .ancestor(
@@ -332,7 +383,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const TechReaderApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tester.tap(find.byTooltip('Save occasion'));
     await tester.pumpAndSettle();
     final saved = await const SharedPreferencesTouchRemoteStore().load(
       'everyday',
@@ -437,7 +488,7 @@ void main() {
       Colors.white,
     );
 
-    await tester.tap(find.widgetWithIcon(IconButton, Icons.save_outlined));
+    await tester.tap(find.byTooltip('Save profile'));
     await tester.pumpAndSettle();
     final saved = await const SharedPreferencesTouchRemoteStore().load(
       'everyday',
@@ -621,7 +672,12 @@ void main() {
     expect(find.text('NewsPage'), findsOneWidget);
     expect(find.text('Surface'), findsNothing);
     expect(find.text('Gallery'), findsNothing);
-    final save = find.widgetWithIcon(IconButton, Icons.save_outlined);
+    final save = find
+        .ancestor(
+          of: find.byTooltip('Save profile'),
+          matching: find.byType(IconButton),
+        )
+        .first;
     expect(tester.widget<IconButton>(save).onPressed, isNull);
 
     await tester.tap(find.text('NewsSection').last);

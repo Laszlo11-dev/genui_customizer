@@ -15,7 +15,102 @@ class _MemoryStorage implements TouchStorage {
   Future<void> save(TouchProfile profile) async => saved = profile;
 }
 
+class _MemoryBounds implements TouchStudioBoundsPersistence {
+  _MemoryBounds(this.bounds);
+
+  Rect bounds;
+  int saves = 0;
+
+  @override
+  Future<Rect?> load() async => bounds;
+
+  @override
+  Future<void> save(Rect value) async {
+    bounds = value;
+    saves++;
+  }
+}
+
 void main() {
+  testWidgets('drag and resize accumulate pointer movement between frames', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = GenUiTouchController(contracts: []);
+    final processor = MessageProcessor<ComponentImplementation>(
+      catalogs: [controller.decorateCatalog(basicCatalog())],
+    );
+    controller.attachProcessor(processor);
+    addTearDown(controller.dispose);
+    addTearDown(processor.dispose);
+    final persistence = _MemoryBounds(const Rect.fromLTWH(100, 100, 500, 500));
+    late BuildContext hostContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            hostContext = context;
+            return const Scaffold(body: SizedBox.expand());
+          },
+        ),
+      ),
+    );
+    showGenUiTouchStudio(
+      context: hostContext,
+      controller: controller,
+      surfaceId: 'test',
+      boundsPersistence: persistence,
+    );
+    await tester.pumpAndSettle();
+
+    final dialog = find.byKey(const Key('genui-touch-studio-dialog'));
+    final studio = tester.widget<GenUiTouchStudio>(
+      find.byType(GenUiTouchStudio),
+    );
+    final drag = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('genui-studio-drag'))),
+    );
+    await drag.moveBy(const Offset(20, 10));
+    await tester.pump();
+    final movedOnce = tester.getRect(dialog);
+    await drag.moveBy(const Offset(30, 15));
+    await drag.moveBy(const Offset(40, 20));
+    await tester.pump();
+    final movedAgain = tester.getRect(dialog);
+    expect(movedAgain.left - movedOnce.left, 70);
+    expect(movedAgain.top - movedOnce.top, 35);
+    expect(
+      identical(
+        tester.widget<GenUiTouchStudio>(find.byType(GenUiTouchStudio)),
+        studio,
+      ),
+      isTrue,
+    );
+    await drag.up();
+    await tester.pump();
+
+    final resize = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('genui-studio-resize'))),
+    );
+    await resize.moveBy(const Offset(10, 10));
+    await tester.pump();
+    final resizedOnce = tester.getRect(dialog);
+    await resize.moveBy(const Offset(20, 15));
+    await resize.moveBy(const Offset(30, 20));
+    await tester.pump();
+    final resizedAgain = tester.getRect(dialog);
+    expect(resizedAgain.width - resizedOnce.width, 50);
+    expect(resizedAgain.height - resizedOnce.height, 35);
+    await resize.up();
+    await tester.pump();
+    expect(persistence.saves, 2);
+    await tester.tap(find.byTooltip('Close editor'));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('open Studio follows a new surface without a selection', (
     tester,
   ) async {

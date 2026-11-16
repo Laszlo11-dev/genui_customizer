@@ -223,12 +223,18 @@ class _FloatingWindow extends StatefulWidget {
 }
 
 class _FloatingWindowState extends State<_FloatingWindow> {
-  Rect? _bounds;
+  late final ValueNotifier<Rect?> _bounds;
 
   @override
   void initState() {
     super.initState();
-    _bounds = widget.initialBounds;
+    _bounds = ValueNotifier(widget.initialBounds);
+  }
+
+  @override
+  void dispose() {
+    _bounds.dispose();
+    super.dispose();
   }
 
   Rect _initial(Size viewport) {
@@ -260,30 +266,28 @@ class _FloatingWindowState extends State<_FloatingWindow> {
     return Rect.fromLTWH(left.toDouble(), top.toDouble(), width, height);
   }
 
-  void _move(DragUpdateDetails details, Rect bounds, Size viewport) {
-    setState(() {
-      _bounds = _fit(bounds.shift(details.delta), viewport);
-    });
+  void _move(DragUpdateDetails details, Size viewport) {
+    final current = _fit(_bounds.value ?? _initial(viewport), viewport);
+    _bounds.value = _fit(current.shift(details.delta), viewport);
   }
 
-  void _resize(DragUpdateDetails details, Rect bounds, Size viewport) {
-    setState(() {
-      final maxWidth = max(0.0, viewport.width - bounds.left - 24);
-      final maxHeight = max(0.0, viewport.height - bounds.top - 32);
-      _bounds = Rect.fromLTWH(
-        bounds.left,
-        bounds.top,
-        (bounds.width + details.delta.dx).clamp(min(360.0, maxWidth), maxWidth),
-        (bounds.height + details.delta.dy).clamp(
-          min(360.0, maxHeight),
-          maxHeight,
-        ),
-      );
-    });
+  void _resize(DragUpdateDetails details, Size viewport) {
+    final current = _fit(_bounds.value ?? _initial(viewport), viewport);
+    final maxWidth = max(0.0, viewport.width - current.left - 24);
+    final maxHeight = max(0.0, viewport.height - current.top - 32);
+    _bounds.value = Rect.fromLTWH(
+      current.left,
+      current.top,
+      (current.width + details.delta.dx).clamp(min(360.0, maxWidth), maxWidth),
+      (current.height + details.delta.dy).clamp(
+        min(360.0, maxHeight),
+        maxHeight,
+      ),
+    );
   }
 
   void _remember() {
-    final bounds = _bounds;
+    final bounds = _bounds.value;
     if (bounds != null) {
       try {
         widget.boundsPersistence?.save(bounds).ignore();
@@ -297,65 +301,73 @@ class _FloatingWindowState extends State<_FloatingWindow> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final viewport = constraints.biggest;
-      final bounds = _fit(_bounds ?? _initial(viewport), viewport);
       final colors = Theme.of(context).colorScheme;
-      return Stack(
-        children: [
-          Positioned.fromRect(
-            rect: bounds,
-            child: Dialog(
-              insetPadding: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              backgroundColor: colors.surface,
-              elevation: 24,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-                side: BorderSide(color: colors.outline, width: 1.5),
+      return ValueListenableBuilder<Rect?>(
+        valueListenable: _bounds,
+        // The editor is expensive; moving the window only updates its bounds.
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GenUiTouchStudio(
+                controller: widget.controller,
+                surfaceId: widget.surfaceId,
+                galleryPreview: widget.galleryPreview,
+                galleryOnly: widget.galleryOnly,
+                colorPalette: widget.colorPalette,
+                onGalleryChanged: widget.onGalleryChanged,
+                onMove: (details) => _move(details, viewport),
+                onMoveEnd: _remember,
+                onClose: () => Navigator.of(context).pop(),
               ),
-              child: SizedBox(
-                key: const Key('genui-touch-studio-dialog'),
-                width: bounds.width,
-                height: bounds.height,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: GenUiTouchStudio(
-                        controller: widget.controller,
-                        surfaceId: widget.surfaceId,
-                        galleryPreview: widget.galleryPreview,
-                        galleryOnly: widget.galleryOnly,
-                        colorPalette: widget.colorPalette,
-                        onGalleryChanged: widget.onGalleryChanged,
-                        onMove: (details) => _move(details, bounds, viewport),
-                        onMoveEnd: _remember,
-                        onClose: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.resizeDownRight,
-                        child: GestureDetector(
-                          key: const Key('genui-studio-resize'),
-                          behavior: HitTestBehavior.opaque,
-                          onPanUpdate: (details) =>
-                              _resize(details, bounds, viewport),
-                          onPanEnd: (_) => _remember(),
-                          child: const SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: Icon(Icons.open_in_full, size: 15),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeDownRight,
+                child: GestureDetector(
+                  key: const Key('genui-studio-resize'),
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (details) => _resize(details, viewport),
+                  onPanEnd: (_) => _remember(),
+                  child: const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: Icon(Icons.open_in_full, size: 15),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+        builder: (context, requestedBounds, editor) {
+          final bounds = _fit(requestedBounds ?? _initial(viewport), viewport);
+          return Stack(
+            children: [
+              Positioned.fromRect(
+                rect: bounds,
+                child: RepaintBoundary(
+                  child: Dialog(
+                    insetPadding: EdgeInsets.zero,
+                    clipBehavior: Clip.antiAlias,
+                    backgroundColor: colors.surface,
+                    elevation: 24,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(color: colors.outline, width: 1.5),
+                    ),
+                    child: SizedBox(
+                      key: const Key('genui-touch-studio-dialog'),
+                      width: bounds.width,
+                      height: bounds.height,
+                      child: editor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       );
     },
   );
