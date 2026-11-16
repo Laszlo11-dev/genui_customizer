@@ -34,7 +34,7 @@ At the repository root:
 ```bash
 flutter pub get
 dart format --output=none --set-exit-if-changed lib test
-flutter analyze --no-pub
+flutter analyze --no-pub lib test
 flutter test --no-pub
 dart run skills_lint
 ```
@@ -65,6 +65,8 @@ cd ../..
 ```
 
 The Windows build requires Windows with Flutter's desktop build tools. The web commands above use the JavaScript target; a successful build does not establish WebAssembly support. Other declared library platforms still require their own platform checks when included in a release's validation claims.
+
+The root analysis explicitly targets `lib` and `test`. Each sample is analyzed in its own CI job after resolving its dependencies; a fresh root checkout must not analyze the separate chat package before its own `pub get` has run.
 
 If a copied or moved app reports a CMake cache/source path mismatch, run `flutter clean` and `flutter pub get` in that app, then rebuild. Do not copy `build/` or generated `windows/flutter/ephemeral/` between samples.
 
