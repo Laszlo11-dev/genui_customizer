@@ -32,6 +32,30 @@ void main() {
         InMemorySharedPreferencesAsync.empty();
   });
 
+  testWidgets(
+    'occasion selector starts with Everyday and has no automatic option',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const TechReaderApp());
+      await tester.pumpAndSettle();
+
+      final selector = find.byType(DropdownButtonFormField<Occasion>);
+      expect(
+        tester.widget<DropdownButtonFormField<Occasion>>(selector).initialValue,
+        Occasion.everyday,
+      );
+      await tester.tap(selector);
+      await tester.pumpAndSettle();
+      expect(find.text('Automatikus'), findsNothing);
+      expect(find.text('Christmas'), findsWidgets);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets('invalid saved occasion data falls back to a working edition', (
     tester,
   ) async {
@@ -179,25 +203,27 @@ void main() {
       ),
       findsOneWidget,
     );
-    final header = tester.widget<Container>(
-      find
-          .ancestor(
-            of: find.text('Touch demo'),
-            matching: find.byType(Container),
-          )
-          .first,
-    );
+    final headerFinder = find
+        .ancestor(of: find.text('Touch demo'), matching: find.byType(Container))
+        .first;
+    final header = tester.widget<Container>(headerFinder);
+    expect(header.color, const Color(0xFF151D2B));
+    expect(tester.getSize(headerFinder).height, 36);
     expect(
-      header.color,
-      Theme.of(tester.element(find.byType(ReaderPage)))
-          .colorScheme
-          .inverseSurface,
+      Theme.of(tester.element(occasionPanel)).colorScheme.brightness,
+      Brightness.dark,
     );
+    final description = tester.widget<Text>(
+      find.text('An editor for the tenant.').last,
+    );
+    expect(description.style?.color, const Color(0xFFB8C5DD));
     final card = tester.widget<Card>(
       find.ancestor(of: panel, matching: find.byType(Card)).first,
     );
     expect(card.elevation, 16);
     expect(card.shadowColor, Colors.black.withValues(alpha: 0.55));
+    expect(card.color, const Color(0xFF222A3A));
+    expect(card.surfaceTintColor, Colors.transparent);
     expect(
       (card.shape as RoundedRectangleBorder).borderRadius,
       BorderRadius.zero,

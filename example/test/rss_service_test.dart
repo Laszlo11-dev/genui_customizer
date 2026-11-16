@@ -166,15 +166,4 @@ void main() {
       false,
     );
   });
-
-  test('automatic Christmas edition', () {
-    expect(
-      resolvedOccasion(Occasion.auto, DateTime(2026, 12, 24)),
-      Occasion.christmas,
-    );
-    expect(
-      resolvedOccasion(Occasion.auto, DateTime(2026, 7, 10)),
-      Occasion.everyday,
-    );
-  });
 }

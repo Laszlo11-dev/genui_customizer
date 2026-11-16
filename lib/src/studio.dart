@@ -110,19 +110,18 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 520;
         final collapseTree = constraints.maxWidth < 700;
-        final colors = Theme.of(context).colorScheme;
         final toolbarIconStyle = IconButton.styleFrom(
-          foregroundColor: colors.onInverseSurface,
-          disabledForegroundColor: colors.onInverseSurface.withValues(
-            alpha: 0.38,
-          ),
+          foregroundColor: Colors.white,
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.38),
         );
         return AnimatedBuilder(
           animation: widget.controller,
           builder: (context, _) => Scaffold(
             key: _scaffoldKey,
+            backgroundColor: Colors.white,
             drawer: collapseTree
                 ? Drawer(
+                    backgroundColor: Colors.white,
                     width: min(360, constraints.maxWidth - 48),
                     child: SafeArea(
                       child: Column(
@@ -151,15 +150,13 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
                 : null,
             appBar: AppBar(
               toolbarHeight: 48,
-              backgroundColor: colors.inverseSurface,
-              foregroundColor: colors.onInverseSurface,
+              backgroundColor: const Color(0xFF151D2B),
+              foregroundColor: Colors.white,
               surfaceTintColor: Colors.transparent,
-              iconTheme: IconThemeData(color: colors.onInverseSurface),
-              actionsIconTheme: IconThemeData(color: colors.onInverseSurface),
-              titleTextStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: colors.onInverseSurface,
-                fontWeight: FontWeight.w600,
-              ),
+              iconTheme: const IconThemeData(color: Colors.white),
+              actionsIconTheme: const IconThemeData(color: Colors.white),
+              titleTextStyle: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
               titleSpacing: compact ? 0 : null,
               leading: widget.onClose == null
                   ? null
@@ -197,7 +194,7 @@ class _GenUiTouchStudioState extends State<GenUiTouchStudio> {
                                 Icon(
                                   Icons.tune_rounded,
                                   size: 20,
-                                  color: colors.inversePrimary,
+                                  color: const Color(0xFF9DABFF),
                                 ),
                                 const SizedBox(width: 12),
                                 const Text('GenUI Touch'),

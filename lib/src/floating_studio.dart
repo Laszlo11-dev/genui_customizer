@@ -301,7 +301,6 @@ class _FloatingWindowState extends State<_FloatingWindow> {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final viewport = constraints.biggest;
-      final colors = Theme.of(context).colorScheme;
       return ValueListenableBuilder<Rect?>(
         valueListenable: _bounds,
         // The editor is expensive; moving the window only updates its bounds.
@@ -350,12 +349,11 @@ class _FloatingWindowState extends State<_FloatingWindow> {
                   child: Dialog(
                     insetPadding: EdgeInsets.zero,
                     clipBehavior: Clip.antiAlias,
-                    backgroundColor: colors.surface,
+                    backgroundColor: Colors.white,
+                    surfaceTintColor: Colors.transparent,
                     elevation: 24,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                      side: BorderSide(color: colors.outline, width: 1.5),
-                    ),
+                    shadowColor: Colors.black.withValues(alpha: 0.45),
+                    shape: const RoundedRectangleBorder(),
                     child: SizedBox(
                       key: const Key('genui-touch-studio-dialog'),
                       width: bounds.width,

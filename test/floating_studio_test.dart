@@ -67,6 +67,25 @@ void main() {
     await tester.pumpAndSettle();
 
     final dialog = find.byKey(const Key('genui-touch-studio-dialog'));
+    final window = tester.widget<Dialog>(
+      find.ancestor(of: dialog, matching: find.byType(Dialog)).first,
+    );
+    expect(window.backgroundColor, Colors.white);
+    expect(window.surfaceTintColor, Colors.transparent);
+    expect(window.elevation, 24);
+    expect(
+      (window.shape as RoundedRectangleBorder).borderRadius,
+      BorderRadius.zero,
+    );
+    expect((window.shape as RoundedRectangleBorder).side, BorderSide.none);
+    final toolbar = tester.widget<AppBar>(
+      find.descendant(
+        of: find.byType(GenUiTouchStudio),
+        matching: find.byType(AppBar),
+      ),
+    );
+    expect(toolbar.backgroundColor, const Color(0xFF151D2B));
+    expect(toolbar.foregroundColor, Colors.white);
     final studio = tester.widget<GenUiTouchStudio>(
       find.byType(GenUiTouchStudio),
     );

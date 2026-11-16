@@ -11,7 +11,7 @@
 
 ## Új konfigurációs mentés
 
-- Az occasion választó a remote konfigurációt azonosítja; `auto` esetén a feloldott occasion rekordja töltődik be. A Tenant editor ezt szerkeszti. Joe, Fred és Emily külön local profilt kapnak; a local megjelenés a remote után érvényesül.
+- Az occasion választó a remote konfigurációt azonosítja; alapértelmezésként az Everyday rekord töltődik be. A Tenant editor ezt szerkeszti. Joe, Fred és Emily külön local profilt kapnak; a local megjelenés a remote után érvényesül.
 - A remote rekordban a Touch profil mellett az occasion neve, a Flutter shell stílusa, az A2UI paletta, a csoportosítás és feliratok kompozíciója, valamint Ask AI esetén a generált elrendezés és prompt is mentődik. A `Save occasion` a teljes rekordot menti akkor is, ha a Touch mezők nem változtak.
 - A csomag `TouchConfigurationStore` és `TouchLocalConfigurationStore` API-kat ad, alapértelmezett helyi tárolókkal. Az egyprofilos `TouchStorage` kompatibilitási út megmaradt. A régi reader profil az Everyday remote rekord kiinduló profilja, amíg nincs új formátumú mentés.
 - User vagy occasion váltáskor a reader a nem mentett Touch változások mentését, eldobását vagy a váltás megszakítását kínálja.

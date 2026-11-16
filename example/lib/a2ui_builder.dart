@@ -23,7 +23,7 @@ class NewsA2uiBuilder {
   }) {
     final nodes = <Map<String, Object?>>[];
     final children = <String>[];
-    final edition = occasion == Occasion.auto ? Occasion.everyday : occasion;
+    final edition = occasion;
     final palette = occasionPalette ?? paletteFor(edition);
     final composition = occasionComposition ?? compositionFor(edition);
 
@@ -285,8 +285,6 @@ class NewsA2uiBuilder {
             composition.columns,
             short: true,
           );
-        case Occasion.auto:
-          break;
       }
     }
     nodes.insert(0, {
@@ -351,9 +349,6 @@ class OccasionComposition {
 
   factory OccasionComposition.fromJson(Map<String, Object?> json) {
     final layout = Occasion.values.byName(json['layout'] as String);
-    if (layout == Occasion.auto) {
-      throw const FormatException('Auto is not an occasion composition.');
-    }
     final rawLabels = json['labels'];
     final rawTerms = json['terms'];
     final columns = json['columns'];
@@ -377,7 +372,7 @@ class OccasionComposition {
 }
 
 OccasionComposition compositionFor(Occasion occasion) => switch (occasion) {
-  Occasion.auto || Occasion.everyday => const OccasionComposition(
+  Occasion.everyday => const OccasionComposition(
     layout: Occasion.everyday,
     labels: {
       'lead': 'THE DAILY EDIT',
@@ -484,8 +479,7 @@ class OccasionPalette {
       );
 }
 
-OccasionPalette paletteFor(Occasion occasion) =>
-    _palettes[occasion == Occasion.auto ? Occasion.everyday : occasion]!;
+OccasionPalette paletteFor(Occasion occasion) => _palettes[occasion]!;
 
 const _palettes = <Occasion, OccasionPalette>{
   Occasion.everyday: OccasionPalette(

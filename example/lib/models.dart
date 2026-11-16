@@ -50,11 +50,10 @@ const webFeedPresets = <FeedPreset>[
   nasaFeedPreset,
 ];
 
-enum Occasion { auto, everyday, christmas, winter, easter, askAi }
+enum Occasion { everyday, christmas, winter, easter, askAi }
 
 extension OccasionInfo on Occasion {
   String get label => switch (this) {
-    Occasion.auto => 'Automatikus',
     Occasion.everyday => 'Everyday',
     Occasion.christmas => 'Christmas',
     Occasion.winter => 'Winter Games',
@@ -63,47 +62,12 @@ extension OccasionInfo on Occasion {
   };
 
   IconData get icon => switch (this) {
-    Occasion.auto => Icons.auto_awesome_outlined,
     Occasion.everyday => Icons.public,
     Occasion.christmas => Icons.celebration_outlined,
     Occasion.winter => Icons.ac_unit,
     Occasion.easter => Icons.local_florist_outlined,
     Occasion.askAi => Icons.auto_awesome,
   };
-}
-
-// Gregorian computus; Easter Sunday falls in March or April.
-DateTime easterSunday(int year) {
-  final a = year % 19;
-  final b = year ~/ 100;
-  final c = year % 100;
-  final d = b ~/ 4;
-  final e = b % 4;
-  final f = (b + 8) ~/ 25;
-  final g = (b - f + 1) ~/ 3;
-  final h = (19 * a + b - d - g + 15) % 30;
-  final i = c ~/ 4;
-  final k = c % 4;
-  final l = (32 + 2 * e + 2 * i - h - k) % 7;
-  final m = (a + 11 * h + 22 * l) ~/ 451;
-  final month = (h + l - 7 * m + 114) ~/ 31;
-  final day = ((h + l - 7 * m + 114) % 31) + 1;
-  return DateTime(year, month, day);
-}
-
-Occasion resolvedOccasion(Occasion selected, DateTime now) {
-  if (selected != Occasion.auto) return selected;
-  if (now.month == 12 && now.day >= 1) return Occasion.christmas;
-  final easter = easterSunday(now.year);
-  final delta = DateTime(
-    now.year,
-    now.month,
-    now.day,
-  ).difference(easter).inDays;
-  if (delta >= -7 && delta <= 1) return Occasion.easter;
-  // 'Winter Games' is a manually selectable showcase edition. We don't
-  // assume an Olympics is taking place every winter.
-  return Occasion.everyday;
 }
 
 class PortalStyle {
