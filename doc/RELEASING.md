@@ -104,4 +104,11 @@ Ask AI is optional. The reader has its own HTTP client and the chat uses a separ
 - The chat JavaScript web release build also succeeded, with the same dependency WebAssembly and CupertinoIcons warnings as the reader.
 - The 0.3.0 archive includes all three current screenshots and both samples, and excludes the MP4 and its HTML player. Its compressed size is approximately 940 KB. The plural `examples/` layout warning is retained deliberately to preserve both documented sample paths; it is not a missing primary example. Commit reviewed changes and rerun the archive validation from that clean revision before publishing.
 
-No package publication or Pages deployment was performed during this preparation. Live RSS availability, live Gemini generation, and the currently deployed site's revision were not validated by these local builds and mocked tests.
+## Publication record: 2026-11-16
+
+- Published `genui_customizer` **0.3.0** to pub.dev; the package API and version page confirm the release and all three screenshot entries.
+- Release source: `08a3e0195e181d50aef56ddcab7711f0e7cd7c88`. The [complete CI matrix](https://github.com/Laszlo11-dev/genui_customizer/actions/runs/43951519011) passed for the package, reader, and chat sample. The package also passed analysis and all 14 tests from a fresh source copy with newly resolved dependencies.
+- The [Pages deployment](https://github.com/Laszlo11-dev/genui_customizer/actions/runs/43950752577) succeeded at `cfb87b7f41b5ac0d05ff60a51675df9b67efb20a`; the following commit changes only CI and this internal guide. The deployed `revision.txt` confirms that source revision.
+- Verified the live reader's narrow layout, guided demo, profile changes, context restoration on close, and Touch Studio opening. All three hosted PNGs and the MP4 return HTTP 200 with their expected media types.
+- The hosted HTML player loads the narrated MP4 without a media error and reports 60 seconds at 1440 × 1080. The published README renders all three screenshots through pub.dev's image proxy and links to the Pages player.
+- The only retained publishing warning is the documented plural `examples/` layout; the archive contains both runnable samples. Live Gemini generation and every external publisher's feed/image/link availability were not certified by this release.
