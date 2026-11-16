@@ -176,6 +176,7 @@ class ChatSession extends ChangeNotifier {
   /// Sends [text] to the model with the renderer data model as it is when the
   /// turn starts, and completes once its reply is applied.
   Future<void> send(String text) {
+    if (_disposed || text.trim().isEmpty) return Future.value();
     entries.add(ChatEntry(ChatEntryKind.user, text));
     _errorTurns = 0;
     return _enqueue(() {

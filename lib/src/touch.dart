@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 /// Types the host permits a user to change for presentation purposes.
@@ -215,6 +216,7 @@ final class GenUiTouchController extends ChangeNotifier {
   DateTime? _lastTap;
   String? _lastTapped;
   int _tapCount = 0;
+  PointerEvent? _lastTapEvent;
   String? _error;
   int _revision = 0;
   int _profileContext = 0;
@@ -320,7 +322,12 @@ final class GenUiTouchController extends ChangeNotifier {
     if (openStudio) onStudioRequested?.call();
   }
 
-  void _tap(TouchSelection selected) {
+  void _tap(TouchSelection selected, PointerUpEvent event) {
+    // Nested decorated components receive the same pointer event. Let the
+    // innermost component own it, preserving its triple-click count.
+    final original = event.original ?? event;
+    if (identical(_lastTapEvent, original)) return;
+    _lastTapEvent = original;
     final now = DateTime.now();
     final key = '${selected.surfaceId}\u0000${selected.instanceId}';
     if (_lastTapped == key &&
@@ -671,7 +678,7 @@ final class GenUiTouchController extends ChangeNotifier {
   }
 }
 
-final class _TouchRegion extends StatelessWidget {
+final class _TouchRegion extends StatefulWidget {
   const _TouchRegion({
     required this.controller,
     required this.selection,
@@ -682,23 +689,56 @@ final class _TouchRegion extends StatelessWidget {
   final Widget child;
 
   @override
+  State<_TouchRegion> createState() => _TouchRegionState();
+}
+
+final class _TouchRegionState extends State<_TouchRegion> {
+  PointerDownEvent? _down;
+
+  @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: controller,
-    builder: (context, _) => GestureDetector(
+    animation: widget.controller,
+    // Observe taps without competing with actions on ancestors, such as a
+    // Button whose Text label is decorated by Touch.
+    builder: (context, _) => Listener(
       behavior: HitTestBehavior.translucent,
-      onTap: () => controller._tap(selection),
-      onLongPress: () => controller.select(selection, openStudio: true),
-      child: DecoratedBox(
-        position: DecorationPosition.foreground,
-        decoration: BoxDecoration(
-          border:
-              controller.showSelectionOutline &&
-                  controller.selection?.surfaceId == selection.surfaceId &&
-                  controller.selection?.instanceId == selection.instanceId
-              ? Border.all(color: const Color(0xFF2962FF), width: 2)
-              : null,
+      onPointerDown: (event) {
+        _down = event.buttons == kPrimaryButton ? event : null;
+      },
+      onPointerMove: (event) {
+        final down = _down;
+        if (down != null &&
+            (event.position - down.position).distance > kTouchSlop) {
+          _down = null;
+        }
+      },
+      onPointerCancel: (_) => _down = null,
+      onPointerUp: (event) {
+        final down = _down;
+        _down = null;
+        if (down != null &&
+            down.pointer == event.pointer &&
+            event.timeStamp - down.timeStamp < kLongPressTimeout) {
+          widget.controller._tap(widget.selection, event);
+        }
+      },
+      child: GestureDetector(
+        onLongPress: () =>
+            widget.controller.select(widget.selection, openStudio: true),
+        child: DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            border:
+                widget.controller.showSelectionOutline &&
+                    widget.controller.selection?.surfaceId ==
+                        widget.selection.surfaceId &&
+                    widget.controller.selection?.instanceId ==
+                        widget.selection.instanceId
+                ? Border.all(color: const Color(0xFF2962FF), width: 2)
+                : null,
+          ),
+          child: widget.child,
         ),
-        child: child,
       ),
     ),
   );

@@ -1,9 +1,9 @@
 name: a2ui_flutter_touch_example
-description: Official A2UI Flutter chat example with GenUI Touch integration.
+description: Adapted A2UI Flutter chat sample with GenUI Touch integration.
 publish_to: none
 environment:
   sdk: ^3.13.0
-  flutter: '>=3.38.0'
+  flutter: '>=3.47.0'
 dependencies:
   flutter:
     sdk: flutter

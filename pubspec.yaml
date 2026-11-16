@@ -16,14 +16,6 @@ topics:
   - customization
   - generative-ui
 
-screenshots:
-  - description: 'Earlier 0.1.x host: edit a live surface with the component tree and property editor.'
-    path: doc/images/studio-overview.png
-  - description: 'Earlier 0.1.x host: choose text styles in the compact Studio window.'
-    path: doc/images/surface-editing.png
-  - description: 'Earlier 0.1.x host: edit a complex layout with a live preview.'
-    path: doc/images/complex-layout-ai-regeneration.png
-
 environment:
   sdk: ^3.13.0
   flutter: '>=3.47.0'

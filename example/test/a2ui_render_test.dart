@@ -1,9 +1,9 @@
 import 'package:a2ui_core/a2ui_core.dart';
 import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:a2ui_flutter/basic_catalog.dart';
-import 'package:a2ui_tech_reader/a2ui_builder.dart';
+import 'package:a2ui_tech_reader/a2ui/a2ui_builder.dart';
 import 'package:a2ui_tech_reader/models.dart';
-import 'package:a2ui_tech_reader/news_gallery.dart';
+import 'package:a2ui_tech_reader/news/news_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

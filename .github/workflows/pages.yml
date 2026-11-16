@@ -35,6 +35,9 @@ jobs:
         working-directory: example
         run: |
           flutter pub get
+          dart format --output=none --set-exit-if-changed lib test
+          flutter analyze --no-pub
+          flutter test --no-pub
           flutter build web --release --base-href /genui_customizer/
       - name: Keep README image URLs
         run: |

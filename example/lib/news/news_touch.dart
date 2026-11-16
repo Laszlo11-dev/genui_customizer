@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:genui_customizer/genui_customizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'news_gallery.dart';
+import 'package:a2ui_tech_reader/news/news_gallery.dart';
 
 /// Initial demo preferences. These records are created once per installation;
 /// subsequent Studio saves belong to the selected user.

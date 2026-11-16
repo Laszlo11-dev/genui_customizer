@@ -1,4 +1,4 @@
-import 'package:a2ui_tech_reader/readable_color.dart';
+import 'package:a2ui_tech_reader/news/readable_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

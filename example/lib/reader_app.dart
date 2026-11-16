@@ -9,18 +9,18 @@ import 'package:flutter/material.dart';
 import 'package:genui_customizer/genui_customizer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'a2ui_builder.dart';
-import 'ai_layout.dart';
-import 'demo_feed.dart';
-import 'demo_tour.dart';
+import 'package:a2ui_tech_reader/a2ui/a2ui_builder.dart';
+import 'package:a2ui_tech_reader/a2ui/ai_layout.dart';
+import 'package:a2ui_tech_reader/demo/demo_feed.dart';
+import 'package:a2ui_tech_reader/demo/demo_tour.dart';
 import 'models.dart';
-import 'news_gallery.dart';
-import 'news_touch.dart';
-import 'news_filter.dart';
-import 'rss_service.dart';
-import 'readable_color.dart';
+import 'package:a2ui_tech_reader/news/news_gallery.dart';
+import 'package:a2ui_tech_reader/news/news_touch.dart';
+import 'package:a2ui_tech_reader/rss/news_filter.dart';
+import 'package:a2ui_tech_reader/rss/rss_service.dart';
+import 'package:a2ui_tech_reader/news/readable_color.dart';
 
-part 'reader_demo.dart';
+part 'demo/reader_demo.dart';
 
 const _demoPanelSurface = Color(0xFF222A3A);
 const _demoPanelHeader = Color(0xFF151D2B);

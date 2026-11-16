@@ -2,9 +2,11 @@
 
 Status: historical design plan. The repository-root 0.2.x package now
 implements the A2UI v1.0 API; consult the root README and source for current
-behavior. Some design targets below remain future work, including durable
-appearance storage in the example. The 0.1.x implementation is available in
-Git history.
+behavior. The main `example/` is now the RSS Tech Reader with persistent local
+occasion and user configurations; the adapted chat sample is in
+`examples/a2ui_flutter_chat/` and has no durable appearance store. The API names
+and example placement proposed below are historical, not the current contract.
+The 0.1.x implementation is available in Git history.
 
 ## Concept assessment (2026-11-12)
 

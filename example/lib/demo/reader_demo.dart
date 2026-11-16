@@ -1,4 +1,4 @@
-part of 'reader_app.dart';
+part of '../reader_app.dart';
 
 enum _DemoUser {
   tenantEditor('Tenant editor', 'An editor for the tenant.'),

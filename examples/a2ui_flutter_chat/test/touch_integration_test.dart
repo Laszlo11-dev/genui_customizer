@@ -21,6 +21,66 @@ class _BusyThenDemoClient implements LlmClient {
 }
 
 void main() {
+  for (final longPress in [false, true]) {
+    testWidgets(
+      'Touch opens with ${longPress ? 'long press' : 'triple click'}',
+      (tester) async {
+        final session = ChatSession(client: DemoClient());
+        addTearDown(session.dispose);
+        await tester.pumpWidget(ChatApp(session: session));
+        await tester.enterText(find.byType(TextField).first, 'Show UI');
+        await tester.tap(find.byTooltip('Send'));
+        await tester.pumpAndSettle();
+        final heading = find.text('A2UI chat surface 1');
+        if (longPress) {
+          await tester.longPress(heading);
+        } else {
+          for (var i = 0; i < 3; i++) {
+            await tester.tap(heading);
+            await tester.pump(const Duration(milliseconds: 80));
+          }
+        }
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('genui-touch-studio-dialog')),
+          findsOneWidget,
+        );
+      },
+    );
+  }
+
+  testWidgets('demo actions and successive prompts keep the chat usable', (
+    tester,
+  ) async {
+    final session = ChatSession(client: DemoClient());
+    addTearDown(session.dispose);
+    await tester.pumpWidget(ChatApp(session: session));
+    await tester.enterText(find.byType(TextField).first, 'Show UI');
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Try action'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Sent: action demoAction'),
+      findsOneWidget,
+      reason: session.entries.map((e) => '${e.kind}: ${e.text}').join('\n'),
+    );
+    expect(
+      find.textContaining('The demo action was received.'),
+      findsOneWidget,
+    );
+    await tester.enterText(find.byType(TextField).first, 'Another UI');
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pumpAndSettle();
+    expect(find.text('A2UI chat surface 1'), findsOneWidget);
+    expect(find.text('A2UI chat surface 3'), findsOneWidget);
+    expect(
+      session.entries.where((e) => e.kind == ChatEntryKind.error),
+      isEmpty,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('official A2UI chat opens a movable, resizable Touch dialog', (
     tester,
   ) async {

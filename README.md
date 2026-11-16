@@ -4,7 +4,13 @@
 
 > **Breaking change in 0.2.1:** GenUI Touch has been rewritten for **A2UI v1.0**, `a2ui_core` 0.7.x, and `a2ui_flutter` 0.3.x. The 0.1.x `genui` API has been removed. Existing 0.1.x integrations must be updated; 0.2.1 is not source compatible and does not automatically migrate saved 0.1.x snapshots or appearance profiles.
 
+Requires **Flutter >=3.47.0 and Dart >=3.13.0**. Repository development and CI use Flutter **3.47.9**, selected in `.fvmrc`.
+
+The current source also includes the changes listed under **Unreleased** in the [changelog](CHANGELOG.md). In this source, constant empty profiles use `const TouchProfile.empty()`; profiles with rules use `TouchProfile(...)`, which copies and freezes its JSON values. Code using the earlier `const TouchProfile()` constructor must be updated.
+
 **[Try the A2UI Tech Reader in your browser](https://laszlo11-dev.github.io/genui_customizer/).** The main example reads technology RSS feeds and lets you edit and save the A2UI news appearance. Its Ask AI feature is optional.
+
+In the reader, choose **Demo feed** in Settings for a bundled RSS snapshot, or use **1-min demo** to see editions, user preferences, and a Touch edit. Feed parsing, A2UI rendering, and manual appearance editing work without an AI key. Reader configurations are saved locally; the Remote and Local labels demonstrate appearance layers rather than synchronized accounts.
 
 ## What it does
 
@@ -59,7 +65,7 @@ To persist preferences, implement `TouchStorage`, load its `TouchProfile` before
 
 For multiple configurations, use `TouchConfiguration` with separate `TouchConfigurationStore` and `TouchLocalConfigurationStore` implementations. Both have shared-preferences defaults and independent `list`, `load`, `save`, and `delete` operations; a host can implement either interface for its own backend. A configuration stores a `TouchProfile` and JSON-compatible host data, such as a complete occasion definition. The host interprets that data and provides the active remote and user profiles to `useConfigurations`. Touch merges remote appearance before local appearance. The Studio edits and saves only the selected profile through `saveEditedProfile`, so the host should save it back into the matching configuration record alongside its occasion data. The existing `TouchStorage` path remains available for single-profile integrations.
 
-The [integration skill](skills/genui-customizer-integration/SKILL.md) gives further host guidance. The main [Tech Reader example](example/) demonstrates an RSS-driven A2UI surface with saved appearance profiles; see its [run instructions](example/README.md). The [A2UI Flutter chat example](examples/a2ui_flutter_chat/) lives under `examples/`. It uses a fixed offline reply by default and can use Gemini when configured; see its [run instructions](examples/a2ui_flutter_chat/README.md).
+The [integration skill](skills/genui-customizer-integration/SKILL.md) gives further host guidance. The main [Tech Reader example](example/README.md) demonstrates an RSS-driven A2UI surface with saved appearance profiles. The [A2UI Flutter chat example](examples/a2ui_flutter_chat/README.md) is also included in the published package under `examples/a2ui_flutter_chat/`. It uses a fixed offline reply by default and can use Gemini when configured.
 
 For catalog color literals, use `TouchValueKind.color`. The Studio shows a current-color swatch and a built-in palette of 16 colors; existing valid `#RRGGBB` and `#AARRGGBB` values remain visible even when they are outside that palette.
 
@@ -72,17 +78,7 @@ Hosts that edit only catalog-wide defaults can open `showGenUiTouchStudio` with 
 - Route incoming messages through `processAgentMessages` instead of maintaining the old editable snapshot flow.
 - Rework persistence around the host-owned `TouchProfile` and `TouchStorage`. Migrate old saved data explicitly if your app needs it; automatic migration is not provided.
 
-The [migration plan](doc/a2ui-package-plan.md) records the redesign decisions. For the previous package behavior, use the 0.1.x release and its documentation in Git history.
-
-## Earlier screenshots
-
-These images show the 0.1.x Restaurant Finder host. They illustrate the editing concept, not the current A2UI Tech Reader.
-
-<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/studio-overview.png" alt="Earlier 0.1.x GenUI Touch Studio over Restaurant Finder" width="400">
-
-<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/surface-editing.png" alt="Earlier 0.1.x compact editing window" width="400">
-
-<img src="https://laszlo11-dev.github.io/genui_customizer/doc/images/complex-layout-ai-regeneration.png" alt="Earlier 0.1.x complex layout editing" width="400">
+The [historical migration plan](https://github.com/Laszlo11-dev/genui_customizer/blob/main/doc/a2ui-package-plan.md) records the redesign decisions. For the previous package behavior, use the 0.1.x release and its documentation in Git history. Maintainers preparing a package or demo release should use the repository's [release guide](https://github.com/Laszlo11-dev/genui_customizer/blob/main/doc/RELEASING.md).
 
 ## License and status
 

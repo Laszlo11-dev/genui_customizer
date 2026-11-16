@@ -1,5 +1,5 @@
-import 'models.dart';
-import 'rss_service.dart';
+import 'package:a2ui_tech_reader/models.dart';
+import 'package:a2ui_tech_reader/rss/rss_service.dart';
 
 /// A fixed, curated RSS reading list of publisher articles and package pages.
 /// Summaries are short paraphrases; links point to the original sources.

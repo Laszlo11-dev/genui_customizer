@@ -1,6 +1,6 @@
 import 'package:a2ui_tech_reader/models.dart';
-import 'package:a2ui_tech_reader/news_filter.dart';
-import 'package:a2ui_tech_reader/rss_service.dart';
+import 'package:a2ui_tech_reader/rss/news_filter.dart';
+import 'package:a2ui_tech_reader/rss/rss_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

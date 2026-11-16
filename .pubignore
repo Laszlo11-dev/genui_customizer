@@ -53,3 +53,11 @@ pubspec_overrides.yaml
 /tool/
 /doc/product_demo/
 /backups/
+
+# Internal history remains available in the repository.
+# Both /example/ and /examples/a2ui_flutter_chat/ are published.
+/example/HANDOVER.md
+/example/INTEGRATION_NOTES.md
+/doc/a2ui-package-plan.md
+/doc/RELEASING.md
+/doc/images/

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 
-import 'models.dart';
+import 'package:a2ui_tech_reader/models.dart';
 
 class RssService {
   RssService({http.Client? client}) : _client = client ?? http.Client();

@@ -1,4 +1,4 @@
-import 'package:a2ui_tech_reader/a2ui_builder.dart';
+import 'package:a2ui_tech_reader/a2ui/a2ui_builder.dart';
 import 'package:a2ui_tech_reader/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -155,9 +155,7 @@ void main() {
     expect(nodes.any((node) => node['eyebrow'] == 'From The Register'), isTrue);
     expect(
       nodes.any(
-        (node) =>
-            node['text'] ==
-            'Could not refresh the selected feed. Showing the last loaded stories.',
+        (node) => node['text'] == 'Could not refresh the selected feed. Showing the last loaded stories.',
       ),
       isTrue,
     );

@@ -1,8 +1,8 @@
 import 'package:a2ui_core/a2ui_core.dart';
 
-import 'models.dart';
-import 'ai_layout.dart';
-import 'news_gallery.dart';
+import 'package:a2ui_tech_reader/models.dart';
+import 'package:a2ui_tech_reader/a2ui/ai_layout.dart';
+import 'package:a2ui_tech_reader/news/news_gallery.dart';
 
 /// Produces the news stream as A2UI data, including its occasion styling.
 class NewsA2uiBuilder {

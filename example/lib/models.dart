@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'ai_layout.dart';
+import 'package:a2ui_tech_reader/a2ui/ai_layout.dart';
 
 class NewsItem {
   const NewsItem({

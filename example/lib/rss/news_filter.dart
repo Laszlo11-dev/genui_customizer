@@ -1,4 +1,4 @@
-import 'models.dart';
+import 'package:a2ui_tech_reader/models.dart';
 
 /// Conservative politics/war filter for a technology reader. A broad `Policy`
 /// category is deliberately insufficient: it also includes tech regulation.

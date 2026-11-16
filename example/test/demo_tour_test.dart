@@ -1,5 +1,5 @@
-import 'package:a2ui_tech_reader/demo_feed.dart';
-import 'package:a2ui_tech_reader/demo_tour.dart';
+import 'package:a2ui_tech_reader/demo/demo_feed.dart';
+import 'package:a2ui_tech_reader/demo/demo_tour.dart';
 import 'package:a2ui_tech_reader/main.dart';
 import 'package:a2ui_tech_reader/models.dart';
 import 'package:flutter/material.dart';
@@ -123,7 +123,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(demoFeedPreset.name).last);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Curated A2UI, Flutter, and Touch'), findsOneWidget);
+    expect(
+      find.textContaining('Curated A2UI, Flutter, and Touch'),
+      findsOneWidget,
+    );
     expect(
       find.textContaining(
         'The links open the original articles and package pages.',

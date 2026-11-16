@@ -5,7 +5,7 @@ import 'package:a2ui_flutter/a2ui_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
 
-import 'readable_color.dart';
+import 'package:a2ui_tech_reader/news/readable_color.dart';
 
 /// Presentation-only catalog. Its properties are intentionally literal-friendly
 /// so a later Touch integration can expose them without changing the renderer.
