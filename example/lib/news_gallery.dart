@@ -370,33 +370,28 @@ final _grid = ComponentImplementation(
     final children = props.children('children');
     final columns = _measure(props, 'columns', 3, 1, 4).round();
     final gap = _measure(props, 'gap', 16, 0, 40);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final count = constraints.maxWidth < 650 ? 1 : columns;
-        return Column(
-          children: [
-            for (var start = 0; start < children.length; start += count) ...[
-              if (start > 0) SizedBox(height: gap),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var i = start; i < start + count; i++) ...[
-                    if (i > start) SizedBox(width: gap),
-                    Expanded(
-                      child: i < children.length
-                          ? KeyedSubtree(
-                              key: NodeKey(children[i].instanceId),
-                              child: buildChild(children[i]),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                ],
-              ),
+    return Column(
+      children: [
+        for (var start = 0; start < children.length; start += columns) ...[
+          if (start > 0) SizedBox(height: gap),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = start; i < start + columns; i++) ...[
+                if (i > start) SizedBox(width: gap),
+                Expanded(
+                  child: i < children.length
+                      ? KeyedSubtree(
+                          key: NodeKey(children[i].instanceId),
+                          child: buildChild(children[i]),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
             ],
-          ],
-        );
-      },
+          ),
+        ],
+      ],
     );
   },
 );

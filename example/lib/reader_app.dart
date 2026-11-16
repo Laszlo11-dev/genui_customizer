@@ -672,6 +672,8 @@ class _ReaderPageState extends State<ReaderPage>
           key: ValueKey(_occasion),
           isExpanded: true,
           initialValue: _occasion,
+          dropdownColor: const Color(0xFF30394A),
+          style: const TextStyle(color: _demoPanelInk, fontSize: 15),
           decoration: const InputDecoration(
             labelText: 'Remote',
             border: OutlineInputBorder(),
@@ -766,6 +768,8 @@ class _ReaderPageState extends State<ReaderPage>
               initialValue: _demoUser,
               isExpanded: true,
               itemHeight: 76,
+              dropdownColor: const Color(0xFF30394A),
+              style: const TextStyle(color: _demoPanelInk, fontSize: 15),
               decoration: const InputDecoration(
                 labelText: 'Local',
                 border: OutlineInputBorder(),
@@ -1055,8 +1059,8 @@ class _ReaderPageState extends State<ReaderPage>
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'Curated RSS snapshot with real articles and publisher images. '
-            'The links open the original articles.',
+            'Curated A2UI, Flutter, and Touch reading list. '
+            'The links open the original articles and package pages.',
           ),
         )
       else
@@ -1188,7 +1192,7 @@ class _ReaderPageState extends State<ReaderPage>
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 1440;
+            final wide = constraints.maxWidth >= 1120;
             final feed = ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [
@@ -1225,7 +1229,7 @@ class _ReaderPageState extends State<ReaderPage>
                 const SizedBox(height: 24),
                 Text(
                   _tour.active
-                      ? 'Curated RSS snapshot · Read original opens each publisher article.'
+                      ? 'Curated RSS snapshot · Read original opens each source page.'
                       : 'Articles belong to their respective publishers. Open the original link to read. No scraping or article republishing.',
                   style: const TextStyle(fontSize: 12),
                 ),
@@ -1248,7 +1252,7 @@ class _ReaderPageState extends State<ReaderPage>
                     Expanded(child: feed),
                     const SizedBox(width: 24),
                     SizedBox(
-                      width: 360,
+                      width: 320,
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
                         child: _buildDemoPanels(actionsInHeader: false),

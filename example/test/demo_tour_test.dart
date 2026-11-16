@@ -80,15 +80,29 @@ void main() {
     },
   );
 
-  test('curated RSS snapshot has real article links and images', () {
-    final stories = demoRssStories();
-    expect(stories.length, 5);
-    expect(stories.every((story) => story.link.scheme == 'https'), isTrue);
-    expect(stories.every((story) => story.imageUrl != null), isTrue);
-    expect(stories.first.source, 'Google Developers Blog');
-    expect(stories.last.source, 'Olympics.com');
-    expect(stories.last.summary.toLowerCase(), contains('winter games'));
-  });
+  test(
+    'curated RSS snapshot features current A2UI, Flutter, and Touch links',
+    () {
+      final stories = demoRssStories();
+      expect(stories.length, 5);
+      expect(stories.every((story) => story.link.scheme == 'https'), isTrue);
+      expect(stories.where((story) => story.imageUrl != null).length, 3);
+      expect(stories.first.source, 'Google Developers Blog');
+      expect(stories.any((story) => story.link.host == 'pub.dev'), isTrue);
+      expect(
+        stories.any((story) => story.title.contains('Flutter 3.50')),
+        isTrue,
+      );
+      expect(stories.last.source, 'GenUI Touch');
+      expect(stories.last.link.host, 'github.com');
+      expect(
+        stories
+            .where((story) => story.published != null)
+            .every((story) => story.published!.year >= 2026),
+        isTrue,
+      );
+    },
+  );
 
   testWidgets('curated demo feed can be selected outside the tour', (
     tester,
@@ -109,8 +123,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(demoFeedPreset.name).last);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Curated RSS snapshot'), findsWidgets);
-    expect(find.textContaining('The links open the original articles.'), findsOneWidget);
+    expect(find.textContaining('Curated A2UI, Flutter, and Touch'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'The links open the original articles and package pages.',
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.byTooltip('Close RSS controls'));
     await tester.pumpAndSettle();
     expect(find.textContaining(demoRssStories().first.title), findsWidgets);

@@ -48,10 +48,49 @@ void main() {
         tester.widget<DropdownButtonFormField<Occasion>>(selector).initialValue,
         Occasion.everyday,
       );
+      expect(
+        tester
+            .widget<DropdownButton<Occasion>>(
+              find.descendant(
+                of: selector,
+                matching: find.byType(DropdownButton<Occasion>),
+              ),
+            )
+            .dropdownColor,
+        const Color(0xFF30394A),
+      );
       await tester.tap(selector);
       await tester.pumpAndSettle();
       expect(find.text('Automatikus'), findsNothing);
       expect(find.text('Christmas'), findsWidgets);
+      expect(
+        DefaultTextStyle.of(tester.element(find.text('Christmas').last))
+            .style
+            .color,
+        const Color(0xFFF3F6FF),
+      );
+      await tester.tap(find.text('Christmas').last);
+      await tester.pumpAndSettle();
+      final userSelector = find.byKey(const Key('demo-user-picker'));
+      expect(
+        tester
+            .widget<DropdownButton>(
+              find.descendant(
+                of: userSelector,
+                matching: find.byWidgetPredicate(
+                  (widget) => widget is DropdownButton,
+                ),
+              ),
+            )
+            .dropdownColor,
+        const Color(0xFF30394A),
+      );
+      await tester.tap(userSelector);
+      await tester.pumpAndSettle();
+      expect(
+        DefaultTextStyle.of(tester.element(find.text('Joe').last)).style.color,
+        const Color(0xFFF3F6FF),
+      );
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -83,7 +122,7 @@ void main() {
     expect(find.descendant(of: panel, matching: touch), findsOneWidget);
     expect(
       find.descendant(of: find.byKey(const Key('user-panel')), matching: touch),
-      findsNothing,
+      findsOneWidget,
     );
     await tester.tap(find.byType(DropdownButtonFormField<Occasion>));
     await tester.pumpAndSettle();
@@ -244,6 +283,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('RSS preset'), findsOneWidget);
     expect(find.text('Search stories'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Touch demo moves beside the feed at 1200 pixels', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+
+    final panel = find.byKey(const Key('touch-demo-panel'));
+    final feed = find.byType(A2uiSurface);
+    expect(
+      tester.getTopLeft(panel).dx,
+      greaterThan(tester.getTopRight(feed).dx),
+    );
+    expect(tester.getSize(panel).width, lessThanOrEqualTo(320));
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });

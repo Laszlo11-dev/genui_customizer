@@ -154,10 +154,9 @@ void main() {
       matching: find.byType(IconButton),
     );
     final undoButton = tester.widget<IconButton>(undoFinder);
-    final colors = Theme.of(tester.element(undoFinder)).colorScheme;
     expect(
       undoButton.style?.foregroundColor?.resolve({WidgetState.disabled}),
-      colors.onInverseSurface.withValues(alpha: 0.38),
+      Colors.white.withValues(alpha: 0.38),
     );
     await tester.tap(find.byKey(const Key('genui-studio-menu')));
     await tester.pumpAndSettle();
