@@ -61,3 +61,7 @@ pubspec_overrides.yaml
 /doc/a2ui-package-plan.md
 /doc/RELEASING.md
 /doc/images/
+
+# Host the video on Pages; publish only its screenshot images in the package.
+/doc/media/*.mp4
+/doc/media/*.html

@@ -10,6 +10,7 @@ on:
       - 'lib/**'
       - 'pubspec.yaml'
       - 'doc/images/**'
+      - 'doc/media/**'
   workflow_dispatch:
 
 permissions:
@@ -43,6 +44,10 @@ jobs:
         run: |
           mkdir -p example/build/web/doc
           cp -r doc/images example/build/web/doc/images
+      - name: Include current demo media and revision
+        run: |
+          cp -r doc/media example/build/web/media
+          printf '%s\n' "$GITHUB_SHA" > example/build/web/revision.txt
       - uses: actions/upload-pages-artifact@v4
         with:
           path: example/build/web

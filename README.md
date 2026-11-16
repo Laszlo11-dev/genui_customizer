@@ -6,11 +6,31 @@
 
 Requires **Flutter >=3.47.0 and Dart >=3.13.0**. Repository development and CI use Flutter **3.47.9**, selected in `.fvmrc`.
 
-The current source also includes the changes listed under **Unreleased** in the [changelog](CHANGELOG.md). In this source, constant empty profiles use `const TouchProfile.empty()`; profiles with rules use `TouchProfile(...)`, which copies and freezes its JSON values. Code using the earlier `const TouchProfile()` constructor must be updated.
+**Breaking change in 0.3.0:** Constant empty profiles use `const TouchProfile.empty()`; profiles with rules use `TouchProfile(...)`, which copies and freezes its JSON values. Code using the earlier `const TouchProfile()` constructor must be updated. See the [changelog](CHANGELOG.md) for the complete release notes.
 
 **[Try the A2UI Tech Reader in your browser](https://laszlo11-dev.github.io/genui_customizer/).** The main example reads technology RSS feeds and lets you edit and save the A2UI news appearance. Its Ask AI feature is optional.
 
 In the reader, choose **Demo feed** in Settings for a bundled RSS snapshot, or use **1-min demo** to see editions, user preferences, and a Touch edit. Feed parsing, A2UI rendering, and manual appearance editing work without an AI key. Reader configurations are saved locally; the Remote and Local labels demonstrate appearance layers rather than synchronized accounts.
+
+## See A2UI and Touch in action
+
+[![Watch the narrated, 60-second GenUI Touch demo](https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png)](https://laszlo11-dev.github.io/genui_customizer/media/)
+
+**[Watch the 60-second narrated demo](https://laszlo11-dev.github.io/genui_customizer/media/)** · [Download the MP4](https://laszlo11-dev.github.io/genui_customizer/media/genui-touch-demo.mp4)
+
+The video records the running reader: A2UI renders the interface, remote occasions change its shared appearance, local profiles personalize it, and a Touch Studio edit updates matching buttons immediately. The reader is an example host for these capabilities.
+
+### Shared tenant appearance
+
+![A2UI reader with the tenant appearance and the Remote and Local Touch controls](https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png)
+
+### Emily's local preferences
+
+![Emily's pink appearance applied to the same A2UI content](https://laszlo11-dev.github.io/genui_customizer/media/reader-emily.png)
+
+### Joe's local preferences
+
+![Joe's larger text, stronger contrast, and single-column layout](https://laszlo11-dev.github.io/genui_customizer/media/reader-joe.png)
 
 ## What it does
 

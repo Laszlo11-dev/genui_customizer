@@ -1,6 +1,6 @@
 name: genui_customizer
 description: GenUI Touch lets users customize A2UI Flutter surfaces at runtime and save appearance preferences.
-version: 0.2.1
+version: 0.3.0
 homepage: https://github.com/Laszlo11-dev/genui_customizer
 repository: https://github.com/Laszlo11-dev/genui_customizer
 issue_tracker: https://github.com/Laszlo11-dev/genui_customizer/issues
@@ -8,6 +8,14 @@ documentation: https://github.com/Laszlo11-dev/genui_customizer/blob/main/README
 
 funding:
   - https://github.com/sponsors/Laszlo11-dev
+
+screenshots:
+  - description: A2UI reader with the shared tenant appearance and Touch controls.
+    path: doc/media/reader-tenant.png
+  - description: Emily's local pink appearance applied over the shared A2UI layout.
+    path: doc/media/reader-emily.png
+  - description: Joe's larger text, strong contrast, and single-column A2UI layout.
+    path: doc/media/reader-joe.png
 
 topics:
   - flutter

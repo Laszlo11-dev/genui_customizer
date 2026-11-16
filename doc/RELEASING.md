@@ -19,11 +19,11 @@ The package and both samples require Flutter >=3.47.0 and Dart >=3.13.0. Develop
 
 ## Version and changelog before publishing
 
-The working tree still declares **0.2.1**. Changes since that heading are collected under **Unreleased**; no new release number or publication date has been assigned by this preparation pass.
+The current release is **0.3.0**. Its changes are recorded under that heading in the changelog. The previous published version was 0.2.1 when this release was prepared.
 
-The pending changes include a source-breaking constructor change: `const TouchProfile()` becomes `const TouchProfile.empty()`, while profiles with rules use the non-const `TouchProfile(...)` constructor. The minimum Flutter version also rises to 3.47. Choose an unused version suitable for these compatibility changes before publishing; **0.3.0** is the intended next minor line if releasing them after 0.2.x. Confirm the version against the publication target when cutting the release.
+This release includes a source-breaking constructor change: `const TouchProfile()` becomes `const TouchProfile.empty()`, while profiles with rules use the non-const `TouchProfile(...)` constructor. The minimum Flutter version also rises to 3.47. Version 0.3.0 was checked as unused on pub.dev before preparing publication.
 
-Move the Unreleased entries under the selected version, update `pubspec.yaml`, and replace the README's temporary Unreleased compatibility note with the selected release number. Preserve the older changelog sections as history. The reader's `0.1.0+1` is its own sample application version, not the library version; both sample manifests have `publish_to: none`.
+For later releases, assign an unused version, move pending changelog entries under it, and update `pubspec.yaml` and README compatibility notes together. Preserve older changelog sections as history. The reader's `0.1.0+1` is its own sample application version, not the library version; both sample manifests have `publish_to: none`.
 
 ## Local checks
 
@@ -80,7 +80,7 @@ Review the listed files and all validation output. The archive must contain the 
 
 Pub warns about the plural `examples/` directory because its convention recognizes `example/` as the primary sample. Keep both samples in the archive at their current paths; this layout warning does not justify excluding the chat sample.
 
-The old 0.1.x screenshots were removed from package metadata and the current README because they show the discontinued host. Add screenshots only after capturing and checking the current reader; keep the descriptions, files, and `screenshots` metadata in sync.
+The old 0.1.x screenshots remain excluded. Current reader images live in `doc/media/` and are included in the package's `screenshots` metadata. The README uses absolute Pages URLs for the images and a linked video preview, so it also works on pub.dev. The narrated MP4 and its playback page are deployed to Pages but excluded from the package archive.
 
 A dirty-tree warning is expected while preparing changes. Review and commit the intended release, verify the archive again from that clean revision, and resolve version warnings before publishing. A dry run with warnings is not a clean publication gate. Actual publishing, pushing a tag, and creating a hosted release are separate actions.
 
@@ -92,14 +92,14 @@ Before announcing a deployed demo, verify its actual deployed revision and exerc
 
 Ask AI is optional. The reader has its own HTTP client and the chat uses a separate streaming client. Mocked tests establish retry/failure behavior, not live model availability. Verify live generation separately if advertising it. A compiled API key is visible to the app's recipient; the sample supplies no public server-side AI proxy.
 
-## Validation record: 2026-11-16
+## Validation record: 2026-11-16 (0.3.0 preparation)
 
 - Reader: all 57 tests passed, including nested triple-click selection, configuration storage, feed parsing, AI response handling, rendering, and the guided tour.
-- Reader web release build with the Pages base path succeeded. The build reported a dependency WebAssembly dry-run incompatibility in `video_player_web` and a missing CupertinoIcons font warning. These did not block the JavaScript build; WebAssembly and all icon glyphs have not been certified.
+- Reader web release build with the Pages base path succeeded. The WebAssembly dry run also succeeded; the shipped build remains JavaScript. The missing CupertinoIcons font warning remains; all icon glyphs have not been certified.
 - Reader Windows release build succeeded.
 - Package tests: all 14 passed. Chat tests: all 8 passed.
 - Package and reader analysis passed. Formatting passed for all 41 Dart files across the package and both samples; the integration skill validator passed and local Markdown links resolved.
 - The chat JavaScript web release build also succeeded, with the same dependency WebAssembly and CupertinoIcons warnings as the reader.
-- Archive review must retain both samples. The dry run reports the plural `examples/` layout warning, a dirty-working-tree warning, and a version-sequence hint. Keep the chat sample included; commit the reviewed changes, select the release version, and rerun before publishing.
+- The 0.3.0 archive includes all three current screenshots and both samples, and excludes the MP4 and its HTML player. Its compressed size is approximately 940 KB. The plural `examples/` layout warning is retained deliberately to preserve both documented sample paths; it is not a missing primary example. Commit reviewed changes and rerun the archive validation from that clean revision before publishing.
 
 No package publication or Pages deployment was performed during this preparation. Live RSS availability, live Gemini generation, and the currently deployed site's revision were not validated by these local builds and mocked tests.

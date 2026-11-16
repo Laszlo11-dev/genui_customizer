@@ -1,4 +1,4 @@
-## Unreleased
+## 0.3.0
 
 ### Breaking API changes
 
@@ -34,6 +34,7 @@
 
 ### Publication preparation
 
+- Add current reader screenshots to the README and pub.dev gallery, plus a narrated 60-second demo hosted alongside the live reader on GitHub Pages.
 - Align reader, package, chat, and integration documentation with the current app structure and storage boundaries.
 - Include both the main RSS reader in `example/` and the chat sample in `examples/a2ui_flutter_chat/` in the published package. Exclude internal handover/design notes from the archive.
 - Remove the earlier 0.1.x screenshots from package metadata and the current README; they do not represent the A2UI reader.
