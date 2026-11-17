@@ -14,11 +14,11 @@ In the reader, choose **Demo feed** in Settings for a bundled RSS snapshot, or u
 
 ## See A2UI and Touch in action
 
-<a href="https://laszlo11-dev.github.io/genui_customizer/media/"><img src="https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png" width="320" alt="Watch the narrated, 60-second GenUI Touch demo"></a>
+<a href="https://laszlo11-dev.github.io/genui_customizer/media/"><img src="https://laszlo11-dev.github.io/genui_customizer/media/demo-poster.png" width="320" alt="Watch the new narrated, 60-second GenUI Touch demo"></a>
 
-**[Watch the 60-second narrated demo](https://laszlo11-dev.github.io/genui_customizer/media/)** · [Download the MP4](https://laszlo11-dev.github.io/genui_customizer/media/genui-touch-demo.mp4)
+**[Watch the new 60-second narrated demo](https://laszlo11-dev.github.io/genui_customizer/media/)** · [Download the MP4](https://laszlo11-dev.github.io/genui_customizer/media/genui-touch-demo.mp4)
 
-The video records the running reader: A2UI renders the interface, remote occasions change its shared appearance, local profiles personalize it, and a Touch Studio edit updates matching buttons immediately. The reader is an example host for these capabilities.
+The video records the running reader: A2UI renders the interface, shared and local appearances change the same feed, and a Touch Studio edit updates matching buttons immediately. The reader is an example host for these capabilities.
 
 Click a screenshot to view it at full size.
 
