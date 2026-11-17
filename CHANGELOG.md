@@ -1,7 +1,9 @@
-## Unreleased
+## 0.3.1
 
 - Add a current Touch Studio screenshot to the README and pub.dev screenshot gallery.
 - Reduce the README video preview to 320 pixels and arrange linked screenshots in a compact, two-column gallery with 280-pixel thumbnails.
+- Update the reader's one-minute tour to show appearance changes sooner, open the Studio reliably, and keep the demo controls compact on wide screens.
+- Replace the narrated demo video and its README and player preview with the new portrait recording.
 
 ## 0.3.0
 

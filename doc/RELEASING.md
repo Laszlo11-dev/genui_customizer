@@ -19,9 +19,9 @@ The package and both samples require Flutter >=3.47.0 and Dart >=3.13.0. Develop
 
 ## Version and changelog before publishing
 
-The current release is **0.3.0**. Its changes are recorded under that heading in the changelog. The previous published version was 0.2.1 when this release was prepared.
+The current release candidate is **0.3.1**. Its changes are recorded under that heading in the changelog. The previous published version is 0.3.0.
 
-This release includes a source-breaking constructor change: `const TouchProfile()` becomes `const TouchProfile.empty()`, while profiles with rules use the non-const `TouchProfile(...)` constructor. The minimum Flutter version also rises to 3.47. Version 0.3.0 was checked as unused on pub.dev before preparing publication.
+Version 0.3.1 updates the reader tour, README media, and screenshot gallery without changing the package API. The 0.3.0 release introduced a source-breaking constructor change: `const TouchProfile()` became `const TouchProfile.empty()`, while profiles with rules use the non-const `TouchProfile(...)` constructor. The minimum Flutter version rose to 3.47 in that release.
 
 For later releases, assign an unused version, move pending changelog entries under it, and update `pubspec.yaml` and README compatibility notes together. Preserve older changelog sections as history. The reader's `0.1.0+1` is its own sample application version, not the library version; both sample manifests have `publish_to: none`.
 
@@ -93,6 +93,13 @@ The Pages workflow builds `example/` with `/genui_customizer/` as the base path 
 Before announcing a deployed demo, verify its actual deployed revision and exercise Settings → Demo feed, the one-minute tour, original article links, Remote/Local selection, a Touch edit/save/reload, and the narrow layout. The bundled feed is a fixed snapshot; publisher images and links need network access. Live feed access is subject to CORS in browsers. Do not describe local demo roles as authenticated or synchronized accounts.
 
 Ask AI is optional. The reader has its own HTTP client and the chat uses a separate streaming client. Mocked tests establish retry/failure behavior, not live model availability. Verify live generation separately if advertising it. A compiled API key is visible to the app's recipient; the sample supplies no public server-side AI proxy.
+
+## Validation record: 2026-11-17 (0.3.1 preparation)
+
+- Flutter 3.47.9 and Dart 3.13.7: formatting passed for all 41 Dart files across the package and both samples. Static analysis passed for the package, reader, and chat sample.
+- All 14 package, 58 reader, and 8 chat tests passed. The integration skill validator passed.
+- Reader web and Windows release builds passed. The chat web release build passed. Both web builds reported the existing CupertinoIcons font warning.
+- The 0.3.1 archive includes four current screenshots, the new demo poster, both samples, and the integration skill. It excludes the MP4 and player HTML. The dry run reported the existing plural `examples/` directory warning; commit the release changes and repeat it from the clean tree before publishing.
 
 ## Validation record: 2026-11-16 (0.3.0 preparation)
 
