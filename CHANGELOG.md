@@ -1,3 +1,8 @@
+## Unreleased
+
+- Add a current Touch Studio screenshot to the README and pub.dev screenshot gallery.
+- Reduce the README video preview to 320 pixels and arrange linked screenshots in a compact, two-column gallery with 280-pixel thumbnails.
+
 ## 0.3.0
 
 ### Breaking API changes

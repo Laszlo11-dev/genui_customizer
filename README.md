@@ -14,23 +14,21 @@ In the reader, choose **Demo feed** in Settings for a bundled RSS snapshot, or u
 
 ## See A2UI and Touch in action
 
-[![Watch the narrated, 60-second GenUI Touch demo](https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png)](https://laszlo11-dev.github.io/genui_customizer/media/)
+<a href="https://laszlo11-dev.github.io/genui_customizer/media/"><img src="https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png" width="320" alt="Watch the narrated, 60-second GenUI Touch demo"></a>
 
 **[Watch the 60-second narrated demo](https://laszlo11-dev.github.io/genui_customizer/media/)** · [Download the MP4](https://laszlo11-dev.github.io/genui_customizer/media/genui-touch-demo.mp4)
 
 The video records the running reader: A2UI renders the interface, remote occasions change its shared appearance, local profiles personalize it, and a Touch Studio edit updates matching buttons immediately. The reader is an example host for these capabilities.
 
-### Shared tenant appearance
+Click a screenshot to view it at full size.
 
-![A2UI reader with the tenant appearance and the Remote and Local Touch controls](https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png)
+| Touch Studio | Shared tenant appearance |
+| --- | --- |
+| <a href="https://laszlo11-dev.github.io/genui_customizer/media/reader-studio.png"><img src="https://laszlo11-dev.github.io/genui_customizer/media/reader-studio.png" width="280" alt="Touch Studio editing NewsStory appearance in the Christmas edition"></a> | <a href="https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png"><img src="https://laszlo11-dev.github.io/genui_customizer/media/reader-tenant.png" width="280" alt="A2UI reader with the tenant appearance and the Remote and Local Touch controls"></a> |
 
-### Emily's local preferences
-
-![Emily's pink appearance applied to the same A2UI content](https://laszlo11-dev.github.io/genui_customizer/media/reader-emily.png)
-
-### Joe's local preferences
-
-![Joe's larger text, stronger contrast, and single-column layout](https://laszlo11-dev.github.io/genui_customizer/media/reader-joe.png)
+| Emily's local preferences | Joe's local preferences |
+| --- | --- |
+| <a href="https://laszlo11-dev.github.io/genui_customizer/media/reader-emily.png"><img src="https://laszlo11-dev.github.io/genui_customizer/media/reader-emily.png" width="280" alt="Emily's pink appearance applied to the same A2UI content"></a> | <a href="https://laszlo11-dev.github.io/genui_customizer/media/reader-joe.png"><img src="https://laszlo11-dev.github.io/genui_customizer/media/reader-joe.png" width="280" alt="Joe's larger text, stronger contrast, and single-column layout"></a> |
 
 ## What it does
 

@@ -10,6 +10,8 @@ funding:
   - https://github.com/sponsors/Laszlo11-dev
 
 screenshots:
+  - description: Touch Studio editing NewsStory appearance in the Christmas edition.
+    path: doc/media/reader-studio.png
   - description: A2UI reader with the shared tenant appearance and Touch controls.
     path: doc/media/reader-tenant.png
   - description: Emily's local pink appearance applied over the shared A2UI layout.
