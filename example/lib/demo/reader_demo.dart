@@ -48,13 +48,13 @@ extension _ReaderDemoTour on _ReaderPageState {
       _articlesSource = 'Curated RSS snapshot';
       _error = null;
       _loading = false;
-      _occasion = Occasion.everyday;
+      _occasion = Occasion.winter;
       _demoUser = _DemoUser.fred;
       _aiLayout = null;
       _aiError = null;
-      _occasionStyle = styleFor(Occasion.everyday);
-      _occasionPalette = paletteFor(Occasion.everyday);
-      _occasionComposition = compositionFor(Occasion.everyday);
+      _occasionStyle = styleFor(Occasion.winter);
+      _occasionPalette = paletteFor(Occasion.winter);
+      _occasionComposition = compositionFor(Occasion.winter);
     });
     // The tour uses seeded, temporary profiles. Existing saved preferences are
     // restored when it closes and are never overwritten by the recording.
@@ -70,6 +70,10 @@ extension _ReaderDemoTour on _ReaderPageState {
 
   Future<void> _runIntroAction(DemoAction action) async {
     switch (action) {
+      case DemoAction.showEveryday:
+        await _setTourOccasion(Occasion.everyday);
+      case DemoAction.showFred:
+        await _setTourUser(_DemoUser.fred);
       case DemoAction.showChristmas:
         await _setTourOccasion(Occasion.christmas);
       case DemoAction.showWinterGames:
@@ -92,6 +96,7 @@ extension _ReaderDemoTour on _ReaderPageState {
         await _visualClick(const Key('tour-touch-button'), 'Open Touch');
         final button = _findTourElement(const Key('tour-touch-button'))?.widget;
         if (button is OutlinedButton) button.onPressed?.call();
+        if (button is IconButton) button.onPressed?.call();
       case DemoAction.makeButtonPink:
         const fieldKey = Key('touch-color-field-buttonColor');
         final field = await _waitForTourElement(fieldKey);

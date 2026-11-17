@@ -177,6 +177,10 @@ void main() {
     Navigator.of(tester.element(find.text('Current A2UI JSON'))).pop();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('occasion-panel')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('occasion-panel'))).dy,
+      lessThan(tester.getTopLeft(find.byKey(const Key('user-panel'))).dy),
+    );
     await tester.tap(find.byKey(const Key('tour-about-button')));
     await tester.pumpAndSettle();
     expect(find.text('GenUI Touch'), findsOneWidget);
@@ -187,6 +191,28 @@ void main() {
     await tester.tap(find.byKey(const Key('feed-settings-button')));
     await tester.pumpAndSettle();
     expect(find.text('RSS preset'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Touch demo selectors share a row when the panel fits', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const TechReaderApp());
+    await tester.pumpAndSettle();
+
+    final occasion = find.byType(DropdownButtonFormField<Occasion>);
+    final user = find.byKey(const Key('demo-user-picker'));
+    expect(tester.getTopLeft(occasion).dy, tester.getTopLeft(user).dy);
+    expect(
+      tester.getTopRight(occasion).dx,
+      lessThan(tester.getTopLeft(user).dx),
+    );
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });

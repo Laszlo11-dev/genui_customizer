@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 /// A cue is an app action at a specific point in a scene. The same script can
 /// be played on a timer for capture or advanced by the viewer during onboarding.
 enum DemoAction {
+  showEveryday,
+  showFred,
   showChristmas,
   showWinterGames,
   showJoe,
@@ -35,29 +37,42 @@ class DemoScene {
   final List<DemoCue> cues;
 }
 
-/// The one-minute intro: three editions, Joe and Emily, then Emily's button edit.
+/// The one-minute intro opens on Winter Games, then shows editions and a Touch edit.
 const introScript = <DemoScene>[
   DemoScene(
-    duration: Duration(seconds: 10),
-    title: 'Stories from RSS',
-    narration: 'The stories and links come from RSS. A2UI renders the news page, and GenUI Touch lets people shape its appearance.',
+    duration: Duration(seconds: 8),
+    title: 'One feed, three looks',
+    narration: 'One feed. Watch the page change instantly for Joe, then Emily.',
+    cues: [
+      DemoCue(Duration(seconds: 1), DemoAction.showJoe),
+      DemoCue(Duration(seconds: 4), DemoAction.showEmily),
+    ],
   ),
   DemoScene(
-    duration: Duration(seconds: 12),
+    duration: Duration(seconds: 7),
+    title: 'Stories from RSS',
+    narration: 'The stories and links come from RSS. A2UI renders the news page, and GenUI Touch lets people shape its appearance.',
+    cues: [
+      DemoCue(Duration.zero, DemoAction.showFred),
+      DemoCue(Duration.zero, DemoAction.showEveryday),
+    ],
+  ),
+  DemoScene(
+    duration: Duration(seconds: 10),
     title: 'Christmas to Winter Games',
     narration: 'The same stories take on a Christmas edition, then a Winter Games layout with a new palette and composition.',
     cues: [
       DemoCue(Duration.zero, DemoAction.showChristmas),
-      DemoCue(Duration(seconds: 6), DemoAction.showWinterGames),
+      DemoCue(Duration(seconds: 5), DemoAction.showWinterGames),
     ],
   ),
   DemoScene(
-    duration: Duration(seconds: 14),
+    duration: Duration(seconds: 12),
     title: 'Joe and Emily',
     narration: 'Joe chooses larger text and stronger contrast. Emily prefers pink. Both see the same stories in their own style.',
     cues: [
       DemoCue(Duration.zero, DemoAction.showJoe),
-      DemoCue(Duration(seconds: 7), DemoAction.showEmily),
+      DemoCue(Duration(seconds: 6), DemoAction.showEmily),
     ],
   ),
   DemoScene(
@@ -70,7 +85,7 @@ const introScript = <DemoScene>[
     ],
   ),
   DemoScene(
-    duration: Duration(seconds: 9),
+    duration: Duration(seconds: 8),
     title: 'Try GenUI Touch',
     narration: 'Choose a look, then make it your own with GenUI Touch.',
     cues: [DemoCue(Duration.zero, DemoAction.closeStudio)],

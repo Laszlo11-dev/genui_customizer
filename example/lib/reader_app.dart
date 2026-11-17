@@ -952,13 +952,29 @@ class _ReaderPageState extends State<ReaderPage>
               width: double.infinity,
               color: _demoPanelSurface,
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildOccasionPanel(),
-                  const SizedBox(height: 14),
-                  _buildUserPanel(showActions: !actionsInHeader),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth >= 480) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildOccasionPanel()),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _buildUserPanel(showActions: !actionsInHeader),
+                        ),
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildOccasionPanel(),
+                      const SizedBox(height: 14),
+                      _buildUserPanel(showActions: !actionsInHeader),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -1194,7 +1210,7 @@ class _ReaderPageState extends State<ReaderPage>
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 1120;
+            final wide = constraints.maxWidth >= 1120 && !_tour.active;
             final feed = ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 56),
               children: [

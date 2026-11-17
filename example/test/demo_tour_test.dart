@@ -24,6 +24,10 @@ void main() {
           for (final cue in scene.cues) cue.action,
       ];
       expect(actions, [
+        DemoAction.showJoe,
+        DemoAction.showEmily,
+        DemoAction.showFred,
+        DemoAction.showEveryday,
         DemoAction.showChristmas,
         DemoAction.showWinterGames,
         DemoAction.showJoe,
@@ -53,13 +57,24 @@ void main() {
       tour.pause();
       expect(starts, 1);
       await tour.next();
-      expect(actions, [DemoAction.showChristmas]);
+      expect(actions, [
+        DemoAction.showJoe,
+        DemoAction.showEmily,
+        DemoAction.showFred,
+        DemoAction.showEveryday,
+      ]);
+      await tour.next();
+      expect(actions.last, DemoAction.showChristmas);
       await tour.next();
       expect(actions.last, DemoAction.showJoe);
       await tour.next();
       expect(actions.last, DemoAction.openStoryStudio);
       await tour.next();
       expect(actions, [
+        DemoAction.showJoe,
+        DemoAction.showEmily,
+        DemoAction.showFred,
+        DemoAction.showEveryday,
         DemoAction.showChristmas,
         DemoAction.showWinterGames,
         DemoAction.showJoe,
@@ -157,9 +172,26 @@ void main() {
     await tester.tap(find.text('1-min demo'));
     await tester.pump();
     expect(find.textContaining('Curated RSS'), findsWidgets);
+    expect(find.textContaining('One feed, three looks'), findsOneWidget);
+    expect(
+      tester
+          .widget<DropdownButtonFormField<Occasion>>(
+            find.byType(DropdownButtonFormField<Occasion>),
+          )
+          .initialValue,
+      Occasion.winter,
+    );
+    await tester.tap(find.byTooltip('Pause demo'));
+    for (var i = 0; i < 100; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.tap(find.byTooltip('Next scene'));
+    for (var i = 0; i < 100; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.textContaining('Stories from RSS'), findsOneWidget);
     await tester.tap(find.byTooltip('Next scene'));
-    for (var i = 0; i < 20; i++) {
+    for (var i = 0; i < 100; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.textContaining('Christmas to Winter Games'), findsOneWidget);
@@ -200,19 +232,22 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('1-min demo'));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, 'Read original').first);
+    await tester.tap(find.text('Read original').first);
     await tester.pump();
     expect(openedArticle, demoRssStories().first.link);
     await tester.tap(find.byTooltip('Pause demo'));
-    await tester.pump();
+    for (var i = 0; i < 100; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     Future<void> advance() async {
       await tester.tap(find.byTooltip('Next scene'));
-      for (var i = 0; i < 40; i++) {
+      for (var i = 0; i < 100; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
     }
 
+    await advance(); // Fred and Everyday
     await advance(); // Christmas
     expect(
       tester
@@ -283,7 +318,7 @@ void main() {
     for (var i = 0; i < 30; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.textContaining('Stories from RSS'), findsOneWidget);
+    expect(find.textContaining('One feed, three looks'), findsOneWidget);
     await tester.tap(find.byTooltip('Close demo'));
     for (var i = 0; i < 30; i++) {
       await tester.pump(const Duration(milliseconds: 100));

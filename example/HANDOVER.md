@@ -21,7 +21,7 @@
 ## Feed, tour és AI
 
 - A Settings forrásválasztójában a Demo feed beépített RSS-pillanatképet tölt be. A forráslinkek és a kiadói képek hálózatot használnak. A pillanatkép nem frissül automatikusan.
-- Az 1-min demo öt jelenetben mutatja az Everyday, Christmas és Winter Games megjelenést, Joe és Emily profilját, majd egy ideiglenes gombszín-szerkesztést. A narráció szövegként jelenik meg; nincs beépített hang. Bezáráskor az előző kontextus visszaáll, a szkriptelt módosítás nem mentődik.
+- Az 1-min demo hat jelenetben a teljes szélességű Winter Games / Fred nézetből indul, az első másodpercekben Joe-ra és Emilyre vált, majd bemutatja az Everyday, Christmas és Winter Games megjelenést, a profilokat és egy ideiglenes gombszín-szerkesztést. A narráció szövegként jelenik meg; nincs beépített hang. Bezáráskor az előző kontextus visszaáll, a szkriptelt módosítás nem mentődik.
 - A Hide politics & war heurisztikus szűrő alapból aktív. A reader legfeljebb 24 szűrt cikket mutat. A hálózati letöltési korlát 15 másodperc és 2 MiB; weben a méretellenőrzés a böngészős pufferelés után történik.
 - Az Ask AI külön HTTP klienssel megjelenési értékeket kér Geminitől, nem a chat kliensét használja. Új generáláshoz kulcs kell; egy mentett AI-occasion kulcs nélkül is betölthető. A kódban rögzített modellek és a retry/timeout működés a README-ben szerepelnek.
 - A publikus Pages build nem tartalmaz Gemini-kulcsot. A CORS, a kiadói képek és az élő AI szolgáltatás elérhetősége külső feltétel.
