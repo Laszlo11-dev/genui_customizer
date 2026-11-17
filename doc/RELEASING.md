@@ -19,7 +19,7 @@ The package and both samples require Flutter >=3.47.0 and Dart >=3.13.0. Develop
 
 ## Version and changelog before publishing
 
-The current release candidate is **0.3.1**. Its changes are recorded under that heading in the changelog. The previous published version is 0.3.0.
+The current release is **0.3.1**. Its changes are recorded under that heading in the changelog. The previous published version was 0.3.0.
 
 Version 0.3.1 updates the reader tour, README media, and screenshot gallery without changing the package API. The 0.3.0 release introduced a source-breaking constructor change: `const TouchProfile()` became `const TouchProfile.empty()`, while profiles with rules use the non-const `TouchProfile(...)` constructor. The minimum Flutter version rose to 3.47 in that release.
 
@@ -100,6 +100,11 @@ Ask AI is optional. The reader has its own HTTP client and the chat uses a separ
 - All 14 package, 58 reader, and 8 chat tests passed. The integration skill validator passed.
 - Reader web and Windows release builds passed. The chat web release build passed. Both web builds reported the existing CupertinoIcons font warning.
 - The 0.3.1 archive includes four current screenshots, the new demo poster, both samples, and the integration skill. It excludes the MP4 and player HTML. The dry run reported the existing plural `examples/` directory warning; commit the release changes and repeat it from the clean tree before publishing.
+
+## Publication record: 2026-11-17 (0.3.1)
+
+- Published `genui_customizer` **0.3.1** to pub.dev from source commit `3a385a6`. The server confirmed the upload; public indexing may take up to 10 minutes.
+- The only package validation warning was the documented plural `examples/` directory layout. Both runnable samples are present in the archive.
 
 ## Validation record: 2026-11-16 (0.3.0 preparation)
 
